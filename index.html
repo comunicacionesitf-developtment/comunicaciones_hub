@@ -85,6 +85,7 @@
     text-transform:uppercase;margin-bottom:14px;
   }
   .hero h1{font-size:clamp(2rem,5vw,3.4rem);line-height:1.05;margin-bottom:14px}
+  .hero-logo{width:100%;max-width:340px;height:auto;margin:4px auto 18px;display:block}
   .hero h1 span{color:var(--gold)}
   .hero p{color:var(--lilac);max-width:560px;margin:0 auto 28px;font-size:1.02rem}
   .hero .hero-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
@@ -418,6 +419,7 @@
     #panel-admin{padding-bottom:14px}
     main{padding-bottom:88px}
 
+    .roster-nav{width:100%;justify-content:center}
     #roster-grid-wrap{display:none}
     .roster-scroll-nav{display:none}
     .roster-mobile-view{display:block}
@@ -537,8 +539,8 @@
 
 <header class="hero" id="hero-publico">
   <div class="container">
-    <div class="eyebrow">Ministerio de Comunicaciones · Torre Fuerte</div>
-    <h1>HUB de <span>Comunicaciones</span></h1>
+    <div class="eyebrow">HUB de Comunicaciones</div>
+    <img src="https://drive.google.com/thumbnail?id=1zkdvRVG0l1IQ2SH1YQK-s3HECRDKcFcJ&sz=w500" alt="Ministerio de Comunicaciones — Torre Fuerte" class="hero-logo">
     <p>Pide apoyo de diseño, foto, video o redes sociales para tu ministerio, o consulta el estatus de tu solicitud en cualquier momento.</p>
     <div class="hero-actions">
       <a href="#panel" class="btn btn-primary">Solicitar apoyo</a>
@@ -563,7 +565,7 @@
           <div class="field-row two">
             <div class="field">
               <label>Ministerio solicitante *</label>
-              <select id="f-ministerio" required>
+              <select id="f-ministerio" required onchange="precargarLiderMinisterio()">
                 <option value="">Selecciona tu ministerio</option>
               </select>
             </div>
@@ -626,7 +628,7 @@
           </div>
 
           <div class="field">
-            <label>Archivo(s) de referencia <span class="hint">(máx. 5 MB en total)</span></label>
+            <label>Archivo(s) de referencia <span class="hint">(máx. 20 MB en total)</span></label>
             <input type="file" id="f-archivo" multiple accept="image/*,.pdf">
             <div class="hint" id="f-archivo-hint">Fotos de referencia, bocetos o documentos — opcional.</div>
           </div>
@@ -1091,6 +1093,16 @@ function initMinisterioSelect(){
   });
 }
 
+function precargarLiderMinisterio(){
+  const id = document.getElementById('f-ministerio').value;
+  const m = MINISTERIOS.find(x => x.ministerioId === id);
+  if(!m || !m.contactos || !m.contactos.length) return;
+  const principal = m.contactos.find(c => c.tipo === 'Principal') || m.contactos[0];
+  if(principal && principal.nombre){
+    document.getElementById('f-lider').value = principal.nombre;
+  }
+}
+
 function waLink(celular){
   const digits = String(celular).replace(/\D/g,'');
   if(!digits) return null;
@@ -1522,8 +1534,8 @@ async function submitSolicitud(e){
   const archivosInput = document.getElementById('f-archivo');
   const archivos = Array.from(archivosInput.files || []);
   const tamañoTotal = archivos.reduce((sum, f) => sum + f.size, 0);
-  if(tamañoTotal > 5 * 1024 * 1024){
-    alert('Los archivos adjuntos superan 5 MB en total. Reduce el tamaño o la cantidad de archivos.');
+  if(tamañoTotal > 20 * 1024 * 1024){
+    alert('Los archivos adjuntos superan 20 MB en total. Reduce el tamaño o la cantidad de archivos.');
     return;
   }
 
@@ -2318,13 +2330,16 @@ function cambiarMesRoster(delta){
 
 async function loadRoster(){
   const wrap = document.getElementById('roster-grid-wrap');
+  const wrapMobile = document.getElementById('roster-mobile-view');
   wrap.innerHTML = `<div class="empty-state">Cargando...</div>`;
+  if(wrapMobile) wrapMobile.innerHTML = `<div class="empty-state">Cargando...</div>`;
   document.getElementById('roster-mes-label').textContent = `${MESES_NOMBRE[ROSTER_MES-1]} ${ROSTER_ANIO}`;
 
   try{
     ROSTER_DATA = await apiGet('roster', {token: authToken, mes: ROSTER_MES, anio: ROSTER_ANIO});
   } catch(err){
     wrap.innerHTML = `<div class="empty-state">No se pudo cargar: ${err.message}</div>`;
+    if(wrapMobile) wrapMobile.innerHTML = `<div class="empty-state">No se pudo cargar: ${err.message}</div>`;
     document.getElementById('roster-dias-tabs').innerHTML = '';
     return;
   }
@@ -2392,6 +2407,8 @@ function renderRosterMobile(){
   const fechaLabel = isNaN(d) ? ev.fecha : d.toLocaleDateString('es-SV', {weekday:'long', day:'2-digit', month:'long'});
   const horaValida = !isNaN(d) && (d.getHours() !== 0 || d.getMinutes() !== 0);
   const horaTxt = horaValida ? d.toLocaleTimeString('es-SV', {hour:'numeric', minute:'2-digit'}) : '';
+  const esGenerico = /^culto/i.test(ev.nombre);
+  const eventoLabel = esGenerico ? (horaTxt || ev.nombre) : [ev.nombre, horaTxt].filter(Boolean).join(' · ');
 
   const filas = ROSTER_DEPARTAMENTOS.map(dep => {
     const editable = puedeEditarDepartamento(dep);
@@ -2407,7 +2424,7 @@ function renderRosterMobile(){
       <button class="icon-btn-sm" onclick="rosterColMover(-1)" aria-label="Evento anterior">‹</button>
       <div class="roster-mobile-stepper-info">
         <div class="roster-mobile-fecha">${fechaLabel.toUpperCase()}</div>
-        <div class="roster-mobile-evento">${ev.nombre}${horaTxt ? ' · ' + horaTxt : ''}</div>
+        <div class="roster-mobile-evento">${eventoLabel}</div>
       </div>
       <button class="icon-btn-sm" onclick="rosterColMover(1)" aria-label="Evento siguiente">›</button>
     </div>
