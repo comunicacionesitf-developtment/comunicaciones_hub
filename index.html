@@ -7,7 +7,7 @@
 <link rel="icon" type="image/png" href="https://drive.google.com/thumbnail?id=1-qZIS4S1Kcb6yA0Qch_RMwXPcVp4M47M&sz=w64">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Montserrat:wght@300&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Montserrat:wght@300&family=Bebas+Neue&family=Poppins:wght@300;400;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#0d0a1f;
@@ -363,6 +363,30 @@
   .dash-bar-fill{height:100%;background:var(--gold);border-radius:6px}
   .dash-bar-total{width:28px;text-align:right;font-size:.8rem;color:var(--lilac-dim);flex-shrink:0}
 
+  /* ---------- Generador de artes ---------- */
+  .arte-pantalla{max-width:520px}
+  .arte-topbar{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .arte-eyebrow{color:var(--lilac-dim);font-size:.72rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase}
+  .arte-titulo{font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.02em;font-weight:700;font-size:1.1rem;color:var(--white)}
+  .arte-grid-plantillas{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .arte-tpl-card{
+    position:relative;border-radius:16px;overflow:hidden;border:2px solid var(--border);
+    height:170px;display:flex;flex-direction:column;justify-content:flex-end;cursor:pointer;
+  }
+  .arte-tpl-card.selected{border-color:var(--gold);box-shadow:0 0 0 3px rgba(234,179,8,.18)}
+  .arte-tpl-card .arte-tpl-check{position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:50%;background:var(--gold);display:none;align-items:center;justify-content:center}
+  .arte-tpl-card.selected .arte-tpl-check{display:flex}
+  .arte-tpl-label{
+    position:relative;padding:10px 12px 12px;font-family:'Oswald',sans-serif;text-transform:uppercase;
+    font-weight:700;font-size:.72rem;letter-spacing:.03em;color:var(--white);
+    background:linear-gradient(to top, rgba(0,0,0,.55), transparent);
+  }
+  .arte-preview-wrap{
+    border-radius:14px;overflow:hidden;border:1px solid var(--border);background:var(--bg-panel-2);
+    display:flex;align-items:center;justify-content:center;min-height:120px;
+  }
+  .arte-preview-wrap img{width:100%;display:block}
+
   /* ---------- Semáforo de cobertura ---------- */
   .semaforo{display:flex;gap:6px}
   .semaforo-icon{
@@ -711,6 +735,7 @@
         <button class="btn btn-outline btn-sm tab-hidden" data-admin-tab="directorio-admin" onclick="switchAdminTab('directorio-admin')">Directorio</button>
         <button class="btn btn-outline btn-sm tab-hidden" data-admin-tab="dashboard" onclick="switchAdminTab('dashboard')">Dashboard</button>
         <button class="btn btn-outline btn-sm tab-hidden" data-admin-tab="usuarios-admin" onclick="switchAdminTab('usuarios-admin')">Usuarios</button>
+        <button class="btn btn-outline btn-sm tab-hidden" data-admin-tab="artes" onclick="switchAdminTab('artes')">Generador de Artes</button>
       </div>
 
       <nav class="mobile-nav" id="mobile-nav">
@@ -741,6 +766,10 @@
         <button class="mobile-nav-btn tab-hidden" data-admin-tab="usuarios-admin" onclick="switchAdminTab('usuarios-admin')">
           <span class="mobile-nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16.5 4.5a3.2 3.2 0 0 1 0 6.2M21 20c0-2.8-2-5.1-4.6-5.8"/></svg></span>
           <span>Usuarios</span>
+        </button>
+        <button class="mobile-nav-btn tab-hidden" data-admin-tab="artes" onclick="switchAdminTab('artes')">
+          <span class="mobile-nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M21 15l-5-5-9 9"/></svg></span>
+          <span>Artes</span>
         </button>
       </nav>
 
@@ -799,6 +828,8 @@
       <div class="tab-content" id="admin-tab-dashboard"></div>
 
       <div class="tab-content" id="admin-tab-usuarios-admin"></div>
+
+      <div class="tab-content" id="admin-tab-artes"></div>
     </div>
 
     <aside class="panel events-panel">
@@ -1699,6 +1730,669 @@ function renderDashboardStats(d){
   `;
 }
 
+/* ============ GENERADOR DE ARTES — COMPOSITOR ============ */
+
+const DIMENSIONES_ARTE = {
+  portrait: { w: 1080, h: 1350 },
+  historia: { w: 1080, h: 1920 },
+  pantalla: { w: 1920, h: 1080 }
+};
+
+const GRADIENTES_ARTE = {
+  dorado_clasico:   { cx: .30, cy: .22, color: 'rgba(245,185,66,.4)'  },
+  violeta_profundo: { cx: .75, cy: .78, color: 'rgba(139,92,246,.4)' },
+  teal_intimo:      { cx: .25, cy: .75, color: 'rgba(56,189,248,.32)' },
+  rosado_suave:     { cx: .70, cy: .25, color: 'rgba(244,114,182,.32)' }
+};
+
+function cssAngleGradientPoints(angleDeg, w, h){
+  const rad = (angleDeg % 360) * Math.PI / 180;
+  const hw = w/2, hh = h/2;
+  const len = Math.abs(hw*Math.sin(rad)) + Math.abs(hh*Math.cos(rad));
+  return [hw - Math.sin(rad)*len, hh + Math.cos(rad)*len, hw + Math.sin(rad)*len, hh - Math.cos(rad)*len];
+}
+
+function dibujarFondoGradiente(ctx, w, h, recipe){
+  const [x1,y1,x2,y2] = cssAngleGradientPoints(160, w, h);
+  const base = ctx.createLinearGradient(x1,y1,x2,y2);
+  base.addColorStop(0, '#1c1636'); base.addColorStop(1, '#0d0a1f');
+  ctx.fillStyle = base; ctx.fillRect(0,0,w,h);
+
+  const radius = 0.8 * Math.max(w,h);
+  const radial = ctx.createRadialGradient(recipe.cx*w, recipe.cy*h, 0, recipe.cx*w, recipe.cy*h, radius);
+  radial.addColorStop(0, recipe.color);
+  radial.addColorStop(0.55, recipe.color.replace(/[\d.]+\)$/, '0)'));
+  radial.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = radial; ctx.fillRect(0,0,w,h);
+}
+
+function fontStringParaRun(run){
+  const familia = run.fontFamily === 'BebasNeue' ? "'Bebas Neue'" : "'Poppins'";
+  const peso = run.fontFamily === 'BebasNeue' ? 400 : (run.weight === 'Bold' ? 700 : run.weight === 'Light' ? 300 : 400);
+  return `${peso} ${run.size}px ${familia}`;
+}
+
+function textoDeRun(run, datos){
+  if(run.bind) return String(datos[run.bind] ?? '');
+  return run.text || '';
+}
+
+function medirTextoRun(ctx, run, texto){
+  ctx.font = fontStringParaRun(run);
+  const letterSp = run.size * (run.letterSpacingEm || 0);
+  let ancho = 0;
+  for(const ch of texto) ancho += ctx.measureText(ch).width + letterSp;
+  return ancho;
+}
+
+function dibujarLinea(ctx, runs, datos, x, y, align, maxWidth){
+  const resueltos = runs.map(run => ({ run, texto: textoDeRun(run, datos) }));
+  const anchoTotal = resueltos.reduce((suma, {run, texto}) => suma + medirTextoRun(ctx, run, texto), 0);
+
+  let cursorX;
+  if(align === 'center') cursorX = x - anchoTotal/2;
+  else if(align === 'right') cursorX = x - anchoTotal;
+  else cursorX = x;
+
+  ctx.textBaseline = 'alphabetic';
+  ctx.textAlign = 'left';
+
+  resueltos.forEach(({run, texto}) => {
+    ctx.font = fontStringParaRun(run);
+    ctx.fillStyle = run.color || '#f5f3ff';
+    const letterSp = run.size * (run.letterSpacingEm || 0);
+    for(const ch of texto){
+      ctx.fillText(ch, cursorX, y);
+      cursorX += ctx.measureText(ch).width + letterSp;
+    }
+  });
+}
+
+function dibujarBloque(ctx, block, datos){
+  if(!block.lines || !block.lines.length) return;
+  const lineHeight = block.lineHeightPx || Math.round((block.lines[0][0]?.size || 32) * 1.25);
+  block.lines.forEach((runs, i) => {
+    dibujarLinea(ctx, runs, datos, block.x, block.y + i*lineHeight, block.align || 'left', block.maxWidth);
+  });
+}
+
+let FUENTES_ARTE_CARGADAS = false;
+async function cargarFuentesArte(){
+  if(FUENTES_ARTE_CARGADAS) return;
+  await Promise.all([
+    document.fonts.load("400 40px 'Bebas Neue'"),
+    document.fonts.load("300 40px 'Poppins'"),
+    document.fonts.load("400 40px 'Poppins'"),
+    document.fonts.load("700 40px 'Poppins'")
+  ]);
+  FUENTES_ARTE_CARGADAS = true;
+}
+
+async function cargarImagen(src){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('No se pudo cargar la imagen de fondo'));
+    img.src = src;
+  });
+}
+
+const CACHE_IMAGEN_PLANTILLA_ARTE = {};
+async function obtenerImagenPlantillaArteCache(plantillaId, fileId){
+  if(CACHE_IMAGEN_PLANTILLA_ARTE[plantillaId]) return CACHE_IMAGEN_PLANTILLA_ARTE[plantillaId];
+  const res = await apiGet('plantilla_arte_imagen', {token: authToken, fileId});
+  CACHE_IMAGEN_PLANTILLA_ARTE[plantillaId] = res.dataUri;
+  return res.dataUri;
+}
+
+async function componerArte(plantilla, formato, datos){
+  const {w, h} = DIMENSIONES_ARTE[formato];
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+
+  if(plantilla.tipo === 'gradiente'){
+    dibujarFondoGradiente(ctx, w, h, GRADIENTES_ARTE[plantilla.gradienteRecipeId]);
+  } else {
+    const dataUri = await obtenerImagenPlantillaArteCache(plantilla.id, plantilla.imagenFileId);
+    const img = await cargarImagen(dataUri);
+    ctx.drawImage(img, 0, 0, w, h);
+  }
+
+  await cargarFuentesArte();
+  const configKey = 'config' + formato.charAt(0).toUpperCase() + formato.slice(1);
+  const config = plantilla[configKey];
+  (config && config.blocks || []).forEach(b => dibujarBloque(ctx, b, datos));
+
+  return canvas.toDataURL('image/jpeg', 0.92);
+}
+
+/* ============ GENERADOR DE ARTES — PANTALLAS ============ */
+
+let ARTES_CATEGORIA_MIERCOLES = null;
+let ARTES_PLANTILLAS_MIERCOLES = [];
+let ARTES_EVENTOS_PENDIENTES = [];
+let ARTE_FLUJO = { eventoId:null, solicitudId:null, plantillaId:null, datos:{fecha:'',hora:'',predicador:''}, imagenes:{portrait:null,historia:null}, formatoActivo:'portrait' };
+
+function renderPlantillaThumbCSS(p){
+  if(p.tipo === 'gradiente'){
+    const r = GRADIENTES_ARTE[p.gradienteRecipeId] || GRADIENTES_ARTE.dorado_clasico;
+    return `background:radial-gradient(circle at ${Math.round(r.cx*100)}% ${Math.round(r.cy*100)}%, ${r.color}, transparent 55%), linear-gradient(160deg, #1c1636, #0d0a1f)`;
+  }
+  return `background:#1c1636`;
+}
+
+function cargarArtesTab(){
+  const cont = document.getElementById('admin-tab-artes');
+  const esAdmin = String(currentUser.rol||'').toUpperCase() === 'ADMIN';
+  cont.innerHTML = `
+    ${esAdmin ? `
+      <div class="roster-dias" style="margin-bottom:18px">
+        <div class="roster-day-tab sol-mini-tab active" data-artes-subtab="generar" onclick="switchArtesSubtab('generar')">Generar</div>
+        <div class="roster-day-tab sol-mini-tab" data-artes-subtab="plantillas" onclick="switchArtesSubtab('plantillas')">Plantillas</div>
+      </div>` : ''}
+    <div id="artes-generar-view"></div>
+    <div id="artes-plantillas-view" style="display:none"></div>
+  `;
+  cargarArtesGenerarView();
+}
+
+function switchArtesSubtab(tab){
+  document.querySelectorAll('[data-artes-subtab]').forEach(el => el.classList.toggle('active', el.dataset.artesSubtab === tab));
+  document.getElementById('artes-generar-view').style.display = tab === 'generar' ? 'block' : 'none';
+  document.getElementById('artes-plantillas-view').style.display = tab === 'plantillas' ? 'block' : 'none';
+  if(tab === 'plantillas') cargarArtesPlantillasView();
+}
+
+async function cargarArtesGenerarView(){
+  const cont = document.getElementById('artes-generar-view');
+  cont.innerHTML = `<div class="empty-state">Cargando...</div>`;
+  try{
+    ARTES_EVENTOS_PENDIENTES = await apiGet('eventos_miercoles_pendientes', {token: authToken});
+  } catch(err){
+    cont.innerHTML = `<div class="empty-state">No se pudo cargar: ${err.message}</div>`;
+    return;
+  }
+  if(!ARTES_EVENTOS_PENDIENTES.length){
+    cont.innerHTML = `<div class="empty-state">No hay próximos Miércoles de Intimidad programados. Si crees que debería haber, pide al Admin correr <code>sembrarCategoriaMiercolesIntimidad()</code> una vez.</div>`;
+    return;
+  }
+  cont.innerHTML = `
+    <div class="admin-note" style="margin-bottom:14px">Miércoles de Intimidad — próximos.</div>
+    <div class="admin-list">${ARTES_EVENTOS_PENDIENTES.map(ev => `
+      <div class="admin-row" onclick="${ev.solicitudId ? `abrirGeneradorArte('${ev.eventoId}','${ev.solicitudId}')` : `alert('Vincula primero una solicitud de Diseño a este evento desde la pestaña Solicitudes.')`}">
+        <div class="ar-main">
+          <div class="ar-title">${formatFechaEvento(ev.fecha)}</div>
+          <div class="ar-sub">${ev.solicitudId ? (ev.completado ? '✓ Arte generado' : 'Listo para generar') : 'Sin solicitud de Diseño vinculada aún'}</div>
+        </div>
+        <span class="badge ${ev.completado ? 'confirmado' : (ev.solicitudId ? 'pendiente' : 'requiere')}">${ev.completado ? 'Completado' : (ev.solicitudId ? 'Pendiente' : 'Sin vincular')}</span>
+      </div>`).join('')}
+    </div>
+  `;
+}
+
+async function abrirGeneradorArte(eventoId, solicitudId){
+  ARTE_FLUJO = { eventoId, solicitudId, plantillaId:null, datos:{fecha:'',hora:'',predicador:''}, imagenes:{portrait:null,historia:null}, formatoActivo:'portrait' };
+  const cont = document.getElementById('artes-generar-view');
+  cont.innerHTML = `<div class="empty-state">Cargando plantillas...</div>`;
+  try{
+    if(!ARTES_CATEGORIA_MIERCOLES){
+      const categorias = await apiGet('categorias_arte', {token: authToken});
+      ARTES_CATEGORIA_MIERCOLES = categorias.find(c => c.nombre === 'Miércoles de Intimidad');
+    }
+    if(!ARTES_CATEGORIA_MIERCOLES){
+      cont.innerHTML = `<div class="empty-state">Falta configurar la categoría "Miércoles de Intimidad" — pide al Admin correr el script de instalación una vez.</div>`;
+      return;
+    }
+    ARTES_PLANTILLAS_MIERCOLES = await apiGet('plantillas_arte', {token: authToken, categoriaId: ARTES_CATEGORIA_MIERCOLES.id});
+  } catch(err){
+    cont.innerHTML = `<div class="empty-state">No se pudo cargar: ${err.message}</div>`;
+    return;
+  }
+  if(!ARTES_PLANTILLAS_MIERCOLES.length){
+    cont.innerHTML = `<div class="empty-state">Aún no hay plantillas activas para esta categoría.</div>`;
+    return;
+  }
+  renderArtePantalla1();
+}
+
+function renderArtePantalla1(){
+  const cont = document.getElementById('artes-generar-view');
+  cont.innerHTML = `
+    <div class="arte-pantalla">
+      <div class="arte-topbar">
+        <button class="icon-btn-sm" onclick="cargarArtesGenerarView()" aria-label="Volver">‹</button>
+        <div>
+          <div class="arte-eyebrow">Generador de artes</div>
+          <div class="arte-titulo">Miércoles de Intimidad</div>
+        </div>
+      </div>
+      <div class="admin-note" style="margin:14px 0">Elige el fondo de esta semana.</div>
+      <div class="arte-grid-plantillas" id="arte-grid-plantillas"></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:18px" id="arte-btn-continuar" disabled onclick="irAPantallaFormArte()">Continuar</button>
+    </div>
+  `;
+  const grid = document.getElementById('arte-grid-plantillas');
+  grid.innerHTML = ARTES_PLANTILLAS_MIERCOLES.map(p => `
+    <div class="arte-tpl-card" id="arte-tpl-${p.id}" style="${renderPlantillaThumbCSS(p)}" onclick="seleccionarPlantillaArte('${p.id}')">
+      <div class="arte-tpl-check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1a1400" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+      <div class="arte-tpl-label">${p.nombre}</div>
+    </div>
+  `).join('');
+  ARTES_PLANTILLAS_MIERCOLES.filter(p => p.tipo === 'imagen').forEach(async p => {
+    try{
+      const dataUri = await obtenerImagenPlantillaArteCache(p.id, p.imagenFileId);
+      const el = document.getElementById(`arte-tpl-${p.id}`);
+      if(el) el.style.background = `url("${dataUri}") center/cover`;
+    } catch(e){ /* deja el placeholder */ }
+  });
+}
+
+function seleccionarPlantillaArte(plantillaId){
+  ARTE_FLUJO.plantillaId = plantillaId;
+  document.querySelectorAll('.arte-tpl-card').forEach(el => el.classList.toggle('selected', el.id === `arte-tpl-${plantillaId}`));
+  document.getElementById('arte-btn-continuar').disabled = false;
+}
+
+function plantillaArteSeleccionada(){
+  return ARTES_PLANTILLAS_MIERCOLES.find(p => p.id === ARTE_FLUJO.plantillaId);
+}
+
+function datosArteConMuestra(datos){
+  return {
+    fecha: datos.fecha || '3 de septiembre',
+    hora: datos.hora || '7:00 PM',
+    predicador: datos.predicador || 'Pastor Alex Fuentes'
+  };
+}
+
+function irAPantallaFormArte(){
+  if(!ARTE_FLUJO.plantillaId) return;
+  renderArtePantalla2();
+}
+
+function renderArtePantalla2(){
+  const cont = document.getElementById('artes-generar-view');
+  const d = ARTE_FLUJO.datos;
+  cont.innerHTML = `
+    <div class="arte-pantalla">
+      <div class="arte-topbar">
+        <button class="icon-btn-sm" onclick="renderArtePantalla1()" aria-label="Volver">‹</button>
+        <div><div class="arte-eyebrow">Paso 2 de 3</div><div class="arte-titulo">Escribe los datos</div></div>
+      </div>
+      <div class="field-row two" style="margin-top:16px">
+        <div class="field"><label>Fecha</label><input type="text" id="arte-f-fecha" placeholder="3 de septiembre" value="${d.fecha}" oninput="actualizarDatoArte('fecha', this.value)"></div>
+        <div class="field"><label>Hora</label><input type="text" id="arte-f-hora" placeholder="7:00 PM" value="${d.hora}" oninput="actualizarDatoArte('hora', this.value)"></div>
+      </div>
+      <div class="field"><label>Pastor / predicador</label><input type="text" id="arte-f-predicador" placeholder="Pastor Alex Fuentes" value="${d.predicador}" oninput="actualizarDatoArte('predicador', this.value)"></div>
+      <div class="preview-label" style="display:flex;justify-content:space-between;font-size:.8rem;color:var(--lilac);margin:14px 0 8px">
+        Vista previa <span style="color:var(--lilac-dim);font-size:.7rem">se actualiza mientras escribes</span>
+      </div>
+      <div class="arte-preview-wrap"><img id="arte-preview-img" alt="Vista previa"></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:18px" id="arte-btn-generar" onclick="generarArteFinal()">Generar imagen</button>
+    </div>
+  `;
+  actualizarPreviewArte();
+}
+
+let ARTE_PREVIEW_DEBOUNCE = null;
+function actualizarDatoArte(campo, valor){
+  ARTE_FLUJO.datos[campo] = valor;
+  clearTimeout(ARTE_PREVIEW_DEBOUNCE);
+  ARTE_PREVIEW_DEBOUNCE = setTimeout(actualizarPreviewArte, 180);
+}
+
+async function actualizarPreviewArte(){
+  const plantilla = plantillaArteSeleccionada();
+  const img = document.getElementById('arte-preview-img');
+  if(!plantilla || !img) return;
+  try{
+    const uri = await componerArte(plantilla, 'portrait', datosArteConMuestra(ARTE_FLUJO.datos));
+    img.src = uri;
+  } catch(err){ console.error('Error generando vista previa:', err); }
+}
+
+async function generarArteFinal(){
+  const plantilla = plantillaArteSeleccionada();
+  if(!plantilla) return;
+  const btn = document.getElementById('arte-btn-generar');
+  const datos = datosArteConMuestra(ARTE_FLUJO.datos);
+  btn.disabled = true; btn.textContent = 'Generando...';
+  try{
+    const [portraitUri, historiaUri] = await Promise.all([
+      componerArte(plantilla, 'portrait', datos),
+      componerArte(plantilla, 'historia', datos)
+    ]);
+    ARTE_FLUJO.imagenes = { portrait: portraitUri, historia: historiaUri };
+    await apiPost('generar_arte_miercoles', {
+      token: authToken, solicitudId: ARTE_FLUJO.solicitudId,
+      portraitBase64: portraitUri, historiaBase64: historiaUri
+    });
+    renderArtePantalla3();
+  } catch(err){
+    alert('No se pudo generar el arte: ' + err.message);
+    btn.disabled = false; btn.textContent = 'Generar imagen';
+  }
+}
+
+function renderArtePantalla3(){
+  const cont = document.getElementById('artes-generar-view');
+  cont.innerHTML = `
+    <div class="arte-pantalla">
+      <div class="arte-topbar"><div class="arte-titulo">¡Listo!</div></div>
+      <div style="display:flex;gap:8px;margin:14px 0">
+        <button class="btn btn-outline btn-sm active" id="arte-toggle-portrait" onclick="cambiarFormatoFinalArte('portrait')">Feed</button>
+        <button class="btn btn-outline btn-sm" id="arte-toggle-historia" onclick="cambiarFormatoFinalArte('historia')">Historia</button>
+      </div>
+      <div class="arte-preview-wrap"><img id="arte-final-img" alt="Arte generado"></div>
+      <div class="confirm-box show" style="margin-top:14px">✓ Se marcó el diseño de este evento como completado</div>
+      <div class="actions" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
+        <button class="btn btn-outline" onclick="descargarArteActual()">Descargar</button>
+        <button class="btn btn-primary" onclick="compartirArte()">Compartir</button>
+      </div>
+      <div class="admin-note" style="margin-top:14px;text-align:center">Se notificó al equipo de Redes Sociales.</div>
+      <button class="btn btn-outline" style="width:100%;margin-top:10px" onclick="cargarArtesGenerarView()">Volver a la lista</button>
+    </div>
+  `;
+  cambiarFormatoFinalArte('portrait');
+}
+
+function cambiarFormatoFinalArte(formato){
+  ARTE_FLUJO.formatoActivo = formato;
+  document.getElementById('arte-toggle-portrait').classList.toggle('active', formato === 'portrait');
+  document.getElementById('arte-toggle-historia').classList.toggle('active', formato === 'historia');
+  document.getElementById('arte-final-img').src = ARTE_FLUJO.imagenes[formato];
+}
+
+function dataUriToBlob(dataUri){
+  const [meta, b64] = dataUri.split(',');
+  const mime = meta.match(/data:([^;]+);/)[1];
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], {type: mime});
+}
+
+function descargarArteActual(){
+  const uri = ARTE_FLUJO.imagenes[ARTE_FLUJO.formatoActivo];
+  if(!uri) return;
+  const a = document.createElement('a');
+  a.href = uri;
+  a.download = `miercoles-intimidad-${ARTE_FLUJO.formatoActivo}.jpg`;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+async function compartirArte(){
+  try{
+    const files = [
+      new File([dataUriToBlob(ARTE_FLUJO.imagenes.portrait)], 'miercoles-intimidad-feed.jpg', {type:'image/jpeg'}),
+      new File([dataUriToBlob(ARTE_FLUJO.imagenes.historia)], 'miercoles-intimidad-historia.jpg', {type:'image/jpeg'})
+    ];
+    if(navigator.canShare && navigator.canShare({files})){
+      await navigator.share({files, text: 'Miércoles de Intimidad'});
+    } else {
+      alert('Tu navegador no permite compartir archivos directamente desde aquí — descarga las imágenes y compártelas desde tu galería.');
+    }
+  } catch(err){
+    if(err.name !== 'AbortError') alert('No se pudo compartir: ' + err.message);
+  }
+}
+
+/* ---- Admin: gestión de plantillas ---- */
+
+let ARTES_TODAS_PLANTILLAS_ADMIN = [];
+let ARTE_ADMIN_CONFIG = null;
+
+async function cargarArtesPlantillasView(){
+  const cont = document.getElementById('artes-plantillas-view');
+  cont.innerHTML = `<div class="empty-state">Cargando...</div>`;
+  try{
+    if(!ARTES_CATEGORIA_MIERCOLES){
+      const categorias = await apiGet('categorias_arte', {token: authToken});
+      ARTES_CATEGORIA_MIERCOLES = categorias.find(c => c.nombre === 'Miércoles de Intimidad');
+    }
+    if(!ARTES_CATEGORIA_MIERCOLES){
+      cont.innerHTML = `<div class="empty-state">Falta correr <code>sembrarCategoriaMiercolesIntimidad()</code> una vez desde el editor de Apps Script.</div>`;
+      return;
+    }
+    ARTES_TODAS_PLANTILLAS_ADMIN = await apiGet('plantillas_arte_admin', {token: authToken, categoriaId: ARTES_CATEGORIA_MIERCOLES.id});
+  } catch(err){
+    cont.innerHTML = `<div class="empty-state">No se pudo cargar: ${err.message}</div>`;
+    return;
+  }
+  renderArtesPlantillasLista();
+}
+
+function renderArtesPlantillasLista(){
+  const cont = document.getElementById('artes-plantillas-view');
+  cont.innerHTML = `
+    <div class="form-footer" style="margin-bottom:14px">
+      <div class="admin-note" style="margin-bottom:0">Plantillas de Miércoles de Intimidad.</div>
+      <button class="btn btn-primary btn-sm" onclick="abrirNuevaPlantillaArte()">+ Nueva plantilla</button>
+    </div>
+    <div class="admin-list">${ARTES_TODAS_PLANTILLAS_ADMIN.map(p => `
+      <div class="admin-row" style="${p.activo ? '' : 'opacity:.5'}" onclick="abrirConfigPlantillaArte('${p.id}')">
+        <div class="ar-main" style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:10px;flex-shrink:0;${renderPlantillaThumbCSS(p)}"></div>
+          <div>
+            <div class="ar-title">${p.nombre}${p.activo ? '' : ' <span class="m-contacto-tag">Inactiva</span>'}</div>
+            <div class="ar-sub">${p.tipo === 'gradiente' ? 'Fondo generado' : 'Imagen propia'}</div>
+          </div>
+        </div>
+      </div>`).join('')}
+    </div>
+  `;
+}
+
+function abrirNuevaPlantillaArte(){ abrirConfigPlantillaArte(null); }
+
+function configPorDefectoArte(w, h){
+  const centroX = w/2;
+  return {
+    canvasW: w, canvasH: h,
+    blocks: [
+      { id:'eyebrow', x:centroX, y:Math.round(h*0.09), maxWidth:w*0.85, align:'center',
+        lines:[[{text:'MIÉRCOLES DE INTIMIDAD', fontFamily:'BebasNeue', size:Math.round(w*0.032), color:'#f5b942', letterSpacingEm:0.06}]] },
+      { id:'predicador', x:centroX, y:Math.round(h*0.52), maxWidth:w*0.85, align:'center', lineHeightPx:Math.round(w*0.07),
+        lines:[
+          [{text:'Pastor', fontFamily:'Poppins', weight:'Light', size:Math.round(w*0.037), color:'#c4b5fd', letterSpacingEm:-0.02}],
+          [{bind:'predicador', fontFamily:'Poppins', weight:'Bold', size:Math.round(w*0.052), color:'#f5f3ff', letterSpacingEm:-0.02}]
+        ] },
+      { id:'meta', x:centroX, y:Math.round(h*0.87), maxWidth:w*0.85, align:'center',
+        lines:[[
+          {bind:'fecha', fontFamily:'Poppins', weight:'Light', size:Math.round(w*0.03), color:'#c4b5fd', letterSpacingEm:-0.02},
+          {text:' · ', fontFamily:'Poppins', weight:'Light', size:Math.round(w*0.03), color:'#c4b5fd'},
+          {bind:'hora', fontFamily:'Poppins', weight:'Bold', size:Math.round(w*0.03), color:'#f5f3ff', letterSpacingEm:-0.02}
+        ]] }
+    ]
+  };
+}
+
+function abrirConfigPlantillaArte(id){
+  const p = id ? ARTES_TODAS_PLANTILLAS_ADMIN.find(x => x.id === id) : null;
+  ARTE_ADMIN_CONFIG = {
+    id: id || '',
+    nombre: p ? p.nombre : '',
+    tipo: p ? p.tipo : 'gradiente',
+    gradienteRecipeId: p ? p.gradienteRecipeId : 'dorado_clasico',
+    imagenUrl: p ? p.imagenUrl : '', imagenFileId: p ? p.imagenFileId : '',
+    imagenDataUriPendiente: null,
+    portrait: (p && p.configPortrait && p.configPortrait.blocks) ? p.configPortrait : configPorDefectoArte(1080,1350),
+    historia: (p && p.configHistoria && p.configHistoria.blocks) ? p.configHistoria : configPorDefectoArte(1080,1920),
+    activo: p ? p.activo : true
+  };
+  renderConfigPlantillaArte();
+}
+
+function bloqueLabelArte(id){
+  return {eyebrow:'Título pequeño', predicador:'Pastor / predicador', meta:'Fecha y hora'}[id] || id;
+}
+
+function renderConfigPlantillaArte(){
+  const c = ARTE_ADMIN_CONFIG;
+  const cont = document.getElementById('artes-plantillas-view');
+
+  function camposFormato(formato){
+    return c[formato].blocks.map((b, bi) => {
+      const ultimaLinea = b.lines[b.lines.length - 1];
+      const runPrincipal = ultimaLinea[ultimaLinea.length - 1];
+      return `
+      <div class="field-row two" style="margin-bottom:10px">
+        <div class="field" style="margin-bottom:0">
+          <label>${bloqueLabelArte(b.id)} — posición vertical</label>
+          <input type="number" value="${b.y}" oninput="actualizarConfigArte('${formato}',${bi},'y',this.value)">
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label>${bloqueLabelArte(b.id)} — tamaño de letra</label>
+          <input type="number" value="${runPrincipal.size}" oninput="actualizarConfigArte('${formato}',${bi},'size',this.value)">
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  cont.innerHTML = `
+    <button class="btn btn-outline btn-sm" style="margin-bottom:14px" onclick="renderArtesPlantillasLista()">‹ Volver</button>
+    <div class="field"><label>Nombre</label><input type="text" id="cfg-arte-nombre" value="${c.nombre}" oninput="ARTE_ADMIN_CONFIG.nombre=this.value"></div>
+    <div class="field">
+      <label>Tipo de fondo</label>
+      <select id="cfg-arte-tipo" onchange="cambiarTipoConfigArte(this.value)">
+        <option value="gradiente" ${c.tipo==='gradiente'?'selected':''}>Fondo generado (gradiente)</option>
+        <option value="imagen" ${c.tipo==='imagen'?'selected':''}>Mi propia imagen</option>
+      </select>
+    </div>
+    <div id="cfg-arte-tipo-extra"></div>
+
+    <div class="admin-note" style="margin:18px 0 6px;color:var(--white);font-weight:600">Formato Feed (1080×1350)</div>
+    <div id="cfg-arte-campos-portrait">${camposFormato('portrait')}</div>
+
+    <div class="admin-note" style="margin:18px 0 6px;color:var(--white);font-weight:600">Formato Historia (1080×1920)</div>
+    <div id="cfg-arte-campos-historia">${camposFormato('historia')}</div>
+
+    <div class="preview-label" style="display:flex;justify-content:space-between;font-size:.8rem;color:var(--lilac);margin:18px 0 8px">Vista previa (con datos de muestra)</div>
+    <div class="field-row two">
+      <div class="arte-preview-wrap"><img id="cfg-arte-preview-portrait" alt="Vista previa feed"></div>
+      <div class="arte-preview-wrap"><img id="cfg-arte-preview-historia" alt="Vista previa historia"></div>
+    </div>
+
+    <div class="hint" id="cfg-arte-error" style="color:var(--red);display:none;margin:12px 0"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:14px" onclick="guardarConfigPlantillaArte()">Guardar plantilla</button>
+    ${c.id ? `<button class="btn btn-outline" style="width:100%;margin-top:10px" onclick="cambiarEstadoPlantillaArteUI()">${c.activo ? 'Desactivar' : 'Activar'}</button>` : ''}
+  `;
+  renderTipoExtraConfigArte();
+  actualizarPreviewConfigArte();
+}
+
+function renderTipoExtraConfigArte(){
+  const c = ARTE_ADMIN_CONFIG;
+  const cont = document.getElementById('cfg-arte-tipo-extra');
+  if(c.tipo === 'gradiente'){
+    cont.innerHTML = `
+      <div class="field">
+        <label>Degradado</label>
+        <select id="cfg-arte-recipe" onchange="ARTE_ADMIN_CONFIG.gradienteRecipeId=this.value;actualizarPreviewConfigArte()">
+          ${Object.keys(GRADIENTES_ARTE).map(k => `<option value="${k}" ${c.gradienteRecipeId===k?'selected':''}>${k.replace(/_/g,' ')}</option>`).join('')}
+        </select>
+      </div>`;
+  } else {
+    cont.innerHTML = `
+      <div class="field">
+        <label>Imagen de fondo (1080×1350 recomendado)</label>
+        <input type="file" accept="image/*" onchange="onSeleccionarFondoPlantillaArte(event)">
+        ${c.imagenUrl ? `<div class="hint">Ya tiene una imagen guardada — sube una nueva solo si quieres reemplazarla.</div>` : ''}
+      </div>`;
+  }
+}
+
+function cambiarTipoConfigArte(tipo){
+  ARTE_ADMIN_CONFIG.tipo = tipo;
+  renderTipoExtraConfigArte();
+  actualizarPreviewConfigArte();
+}
+
+function onSeleccionarFondoPlantillaArte(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    ARTE_ADMIN_CONFIG.imagenDataUriPendiente = reader.result;
+    actualizarPreviewConfigArte();
+  };
+  reader.readAsDataURL(file);
+}
+
+function actualizarConfigArte(formato, blockIndex, campo, valor){
+  const block = ARTE_ADMIN_CONFIG[formato].blocks[blockIndex];
+  const num = parseInt(valor, 10) || 0;
+  if(campo === 'y') block.y = num;
+  if(campo === 'size') block.lines.forEach(line => line.forEach(run => { run.size = num; }));
+  actualizarPreviewConfigArte();
+}
+
+let ARTE_CFG_PREVIEW_DEBOUNCE = null;
+function actualizarPreviewConfigArte(){
+  clearTimeout(ARTE_CFG_PREVIEW_DEBOUNCE);
+  ARTE_CFG_PREVIEW_DEBOUNCE = setTimeout(async () => {
+    const c = ARTE_ADMIN_CONFIG;
+    if(!c) return;
+    const plantillaTemp = {
+      id: c.id || 'temp', tipo: c.tipo, gradienteRecipeId: c.gradienteRecipeId,
+      imagenFileId: c.imagenFileId, configPortrait: c.portrait, configHistoria: c.historia
+    };
+    const datos = { fecha:'3 de septiembre', hora:'7:00 PM', predicador:'Pastor Alex Fuentes' };
+    const imgP = document.getElementById('cfg-arte-preview-portrait');
+    const imgH = document.getElementById('cfg-arte-preview-historia');
+    if(c.tipo === 'imagen' && c.imagenDataUriPendiente){
+      CACHE_IMAGEN_PLANTILLA_ARTE[plantillaTemp.id] = c.imagenDataUriPendiente;
+    }
+    if(c.tipo === 'imagen' && !c.imagenDataUriPendiente && !c.imagenFileId){
+      if(imgP) imgP.removeAttribute('src');
+      if(imgH) imgH.removeAttribute('src');
+      return;
+    }
+    try{
+      const [uriP, uriH] = await Promise.all([
+        componerArte(plantillaTemp, 'portrait', datos),
+        componerArte(plantillaTemp, 'historia', datos)
+      ]);
+      if(imgP) imgP.src = uriP;
+      if(imgH) imgH.src = uriH;
+    } catch(err){ console.error('Error en vista previa de config:', err); }
+  }, 200);
+}
+
+async function guardarConfigPlantillaArte(){
+  const c = ARTE_ADMIN_CONFIG;
+  const errorEl = document.getElementById('cfg-arte-error');
+  errorEl.style.display = 'none';
+  if(!c.nombre.trim()){
+    errorEl.textContent = 'Ponle un nombre a la plantilla.'; errorEl.style.display = 'block'; return;
+  }
+  const payload = {
+    token: authToken, id: c.id || undefined, categoriaId: ARTES_CATEGORIA_MIERCOLES.id,
+    nombre: c.nombre.trim(), tipo: c.tipo,
+    gradienteRecipeId: c.tipo === 'gradiente' ? c.gradienteRecipeId : '',
+    configPortrait: c.portrait, configHistoria: c.historia
+  };
+  if(c.tipo === 'imagen' && c.imagenDataUriPendiente) payload.imagenDataUri = c.imagenDataUriPendiente;
+  if(c.tipo === 'imagen' && !c.imagenDataUriPendiente){ payload.imagenUrl = c.imagenUrl; payload.imagenFileId = c.imagenFileId; }
+  try{
+    await apiPost('guardar_plantilla_arte', payload);
+    await cargarArtesPlantillasView();
+  } catch(err){
+    errorEl.textContent = 'No se pudo guardar: ' + err.message;
+    errorEl.style.display = 'block';
+  }
+}
+
+async function cambiarEstadoPlantillaArteUI(){
+  const c = ARTE_ADMIN_CONFIG;
+  if(!c || !c.id) return;
+  try{
+    await apiPost('cambiar_estado_plantilla_arte', {token: authToken, id: c.id, activo: !c.activo});
+    await cargarArtesPlantillasView();
+  } catch(err){ alert('No se pudo actualizar: ' + err.message); }
+}
+
 /* ============ EVENTOS DE LA SEMANA ============ */
 
 async function loadEventos(){
@@ -2110,6 +2804,9 @@ function aplicarSesion(){
   setTabVisibility('directorio-admin', true);
   setTabVisibility('dashboard', esAdmin || esPastor);
   setTabVisibility('usuarios-admin', esAdmin);
+  const deptosNorm = deptos.map(d => normalizarDepartamentoJS(d));
+  const tieneAccesoArtes = esAdmin || deptosNorm.some(d => d.includes('DISE') || d.includes('CONTEN'));
+  setTabVisibility('artes', tieneAccesoArtes);
   const esMiembro = !esAdmin && !esLider && !esPastor;
   document.getElementById('btn-ver-calendario-equipo').style.display = esMiembro ? 'inline-flex' : 'none';
   document.getElementById('volver-mis-tareas-link').style.display = esMiembro ? 'inline-block' : 'none';
@@ -2252,6 +2949,7 @@ function switchAdminTab(tab){
   document.getElementById('admin-tab-directorio-admin').classList.toggle('active', tab==='directorio-admin');
   document.getElementById('admin-tab-dashboard').classList.toggle('active', tab==='dashboard');
   document.getElementById('admin-tab-usuarios-admin').classList.toggle('active', tab==='usuarios-admin');
+  document.getElementById('admin-tab-artes').classList.toggle('active', tab==='artes');
   if(ES_ADMIN_O_LIDER && USUARIOS_ACTIVOS.length === 0){
     loadUsuariosActivos();
   }
@@ -2272,6 +2970,9 @@ function switchAdminTab(tab){
   }
   if(tab === 'usuarios-admin'){
     cargarUsuariosAdminTab();
+  }
+  if(tab === 'artes'){
+    cargarArtesTab();
   }
 }
 
