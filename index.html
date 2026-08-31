@@ -2950,12 +2950,14 @@ async function guardarCobertura(){
   try{
     await apiPost(id ? 'editar_cobertura' : 'crear_cobertura', payload);
 
-    const tareas = [loadEventosAdmin(), loadEventos()];
-    if(ROSTER_DATA) tareas.push(loadRoster());
+    // recargas en secuencia (no en paralelo) para evitar que una respuesta
+    // más lenta pise en pantalla a una más nueva
     if(EVENTO_DETALLE_ACTUAL && EVENTO_DETALLE_ACTUAL.id === eventoId){
-      tareas.push(apiGet('evento_detalle', {token: authToken, eventoId}).then(d => { EVENTO_DETALLE_ACTUAL = d; }));
+      EVENTO_DETALLE_ACTUAL = await apiGet('evento_detalle', {token: authToken, eventoId});
     }
-    await Promise.all(tareas);
+    await loadEventosAdmin();
+    await loadEventos();
+    if(ROSTER_DATA) await loadRoster();
 
     msg.style.color = 'var(--green)';
     msg.textContent = '✓ Cobertura guardada correctamente. Puedes agregar otra persona.';
