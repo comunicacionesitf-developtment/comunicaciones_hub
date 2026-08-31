@@ -348,6 +348,21 @@
   }
   .icon-btn-sm:hover{border-color:var(--gold);color:var(--gold-light)}
 
+  /* ---------- Dashboard ---------- */
+  .dash-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .dash-tile{
+    background:var(--bg-panel-2);border:1px solid var(--border);border-radius:14px;
+    padding:16px;text-align:center;
+  }
+  .dash-tile-valor{font-family:'Oswald',sans-serif;font-size:1.7rem;color:var(--gold-light)}
+  .dash-tile-label{font-size:.72rem;color:var(--lilac-dim);margin-top:4px}
+  .dash-bars{display:flex;flex-direction:column;gap:10px}
+  .dash-bar-row{display:flex;align-items:center;gap:10px}
+  .dash-bar-label{width:130px;flex-shrink:0;font-size:.8rem;color:var(--lilac);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dash-bar-track{flex:1;height:10px;border-radius:6px;background:var(--bg-panel-2);border:1px solid var(--border);overflow:hidden}
+  .dash-bar-fill{height:100%;background:var(--gold);border-radius:6px}
+  .dash-bar-total{width:28px;text-align:right;font-size:.8rem;color:var(--lilac-dim);flex-shrink:0}
+
   /* ---------- Semáforo de cobertura ---------- */
   .semaforo{display:flex;gap:6px}
   .semaforo-icon{
@@ -465,6 +480,9 @@
       flex:1;border:none;padding:9px 4px;font-size:.76rem;white-space:nowrap;
     }
     #panel-publico .tabs .btn.active{box-shadow:0 3px 10px -3px rgba(234,179,8,.6)}
+
+    .dash-tiles{grid-template-columns:repeat(2,1fr)}
+    .dash-bar-label{width:88px}
   }
 </style>
 </head>
@@ -691,6 +709,8 @@
         <button class="btn btn-outline btn-sm" data-admin-tab="eventos" onclick="switchAdminTab('eventos')">Eventos</button>
         <button class="btn btn-outline btn-sm" data-admin-tab="programacion" onclick="switchAdminTab('programacion')">Programación</button>
         <button class="btn btn-outline btn-sm tab-hidden" data-admin-tab="directorio-admin" onclick="switchAdminTab('directorio-admin')">Directorio</button>
+        <button class="btn btn-outline btn-sm tab-hidden" data-admin-tab="dashboard" onclick="switchAdminTab('dashboard')">Dashboard</button>
+        <button class="btn btn-outline btn-sm tab-hidden" data-admin-tab="usuarios-admin" onclick="switchAdminTab('usuarios-admin')">Usuarios</button>
       </div>
 
       <nav class="mobile-nav" id="mobile-nav">
@@ -713,6 +733,14 @@
         <button class="mobile-nav-btn tab-hidden" data-admin-tab="directorio-admin" onclick="switchAdminTab('directorio-admin')">
           <span class="mobile-nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="10" r="2.5"/><path d="M8 17c0-2 1.8-3.5 4-3.5s4 1.5 4 3.5"/></svg></span>
           <span>Directorio</span>
+        </button>
+        <button class="mobile-nav-btn tab-hidden" data-admin-tab="dashboard" onclick="switchAdminTab('dashboard')">
+          <span class="mobile-nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V10M11 19V5M18 19v-6"/></svg></span>
+          <span>Dashboard</span>
+        </button>
+        <button class="mobile-nav-btn tab-hidden" data-admin-tab="usuarios-admin" onclick="switchAdminTab('usuarios-admin')">
+          <span class="mobile-nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16.5 4.5a3.2 3.2 0 0 1 0 6.2M21 20c0-2.8-2-5.1-4.6-5.8"/></svg></span>
+          <span>Usuarios</span>
         </button>
       </nav>
 
@@ -767,6 +795,10 @@
       </div>
 
       <div class="tab-content" id="admin-tab-directorio-admin"></div>
+
+      <div class="tab-content" id="admin-tab-dashboard"></div>
+
+      <div class="tab-content" id="admin-tab-usuarios-admin"></div>
     </div>
 
     <aside class="panel events-panel">
@@ -850,8 +882,9 @@
         <option value="Cancelado">Cancelado</option>
       </select>
     </div>
-    <button class="btn btn-primary" style="width:100%" onclick="guardarCobertura()">Guardar cobertura</button>
-    <button class="btn btn-outline" style="width:100%;margin-top:10px" onclick="cerrarFormCobertura()">Cancelar</button>
+    <div class="hint" id="cobertura-form-msg" style="display:none;margin-bottom:12px"></div>
+    <button class="btn btn-primary" style="width:100%" id="btn-guardar-cobertura" onclick="guardarCobertura()">Guardar cobertura</button>
+    <button class="btn btn-outline" style="width:100%;margin-top:10px" onclick="cerrarFormCobertura()">Cerrar</button>
     <button class="btn btn-outline" id="btn-eliminar-cobertura" style="width:100%;margin-top:10px;display:none" onclick="eliminarCoberturaUI()">Eliminar cobertura</button>
   </div>
 </div>
@@ -1012,6 +1045,44 @@
     <div class="hint" id="contacto-error" style="color:var(--red);display:none;margin-bottom:12px"></div>
     <button class="btn btn-primary" style="width:100%" onclick="guardarContacto()">Guardar contacto</button>
     <button class="btn btn-outline" id="btn-eliminar-contacto" style="width:100%;margin-top:10px;display:none" onclick="eliminarContactoUI()">Eliminar contacto</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="usuario-overlay" style="display:none">
+  <div class="modal-box" style="max-width:420px">
+    <button class="modal-close" onclick="cerrarUsuario()" aria-label="Cerrar">&times;</button>
+    <h3 id="usuario-form-titulo">Nuevo usuario</h3>
+    <input type="hidden" id="usuario-id">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:18px">
+      <div class="avatar-circle avatar-lg" id="usuario-foto-preview"></div>
+    </div>
+    <div class="field">
+      <label>Nombre</label>
+      <input type="text" id="usuario-nombre" placeholder="Nombre completo">
+    </div>
+    <div class="field">
+      <label>Correo</label>
+      <input type="email" id="usuario-correo" placeholder="correo@ejemplo.com">
+    </div>
+    <div class="field-row two">
+      <div class="field">
+        <label>Rol</label>
+        <select id="usuario-rol">
+          <option value="">Miembro</option>
+          <option value="LIDER">Líder de rama</option>
+          <option value="ADMIN">Administrador</option>
+          <option value="PASTOR">Pastor</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Rama(s)</label>
+        <input type="text" id="usuario-departamentos" placeholder="Ej. Foto & Video">
+      </div>
+    </div>
+    <div class="hint" id="usuario-error" style="color:var(--red);display:none;margin-bottom:12px"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="guardarUsuario()">Guardar usuario</button>
+    <button class="btn btn-outline" id="btn-desactivar-usuario" style="width:100%;margin-top:10px;display:none" onclick="cambiarEstadoUsuarioUI()">Desactivar</button>
+    <button class="btn btn-outline" id="btn-eliminar-usuario" style="width:100%;margin-top:10px;display:none" onclick="eliminarUsuarioUI()">Eliminar usuario</button>
   </div>
 </div>
 
@@ -1383,6 +1454,249 @@ async function eliminarContactoUI(){
   } catch(err){
     alert('No se pudo eliminar: ' + err.message);
   }
+}
+
+/* ============ ADMIN: USUARIOS ============ */
+
+function avatarCircularHTML(nombre, seed, foto, tam){
+  const size = tam || 42;
+  if(foto){
+    return `<div class="avatar-circle" style="width:${size}px;height:${size}px;background-image:url('${foto}');background-size:cover;background-position:center"></div>`;
+  }
+  const {iniciales, color} = inicialesYColor(nombre, seed);
+  return `<div class="avatar-circle" style="width:${size}px;height:${size}px;background:${color};font-size:${Math.round(size*.36)}px">${iniciales}</div>`;
+}
+
+let USUARIOS_ADMIN = [];
+const ROL_LABEL_USUARIO = {ADMIN:'Administrador', LIDER:'Líder de rama', PASTOR:'Pastor'};
+
+function cargarUsuariosAdminTab(){
+  const cont = document.getElementById('admin-tab-usuarios-admin');
+  cont.innerHTML = `
+    <div class="form-footer" style="margin-bottom:14px">
+      <div class="admin-note" style="margin-bottom:0">Equipo de comunicaciones — roles, ramas y acceso al HUB.</div>
+      <button class="btn btn-primary btn-sm" onclick="abrirUsuario(null)">+ Nuevo usuario</button>
+    </div>
+    <div class="admin-list" id="usuarios-admin-list"></div>
+  `;
+  loadUsuariosAdmin();
+}
+
+async function loadUsuariosAdmin(){
+  const list = document.getElementById('usuarios-admin-list');
+  list.innerHTML = `<div class="empty-state">Cargando...</div>`;
+  try{
+    USUARIOS_ADMIN = await apiGet('usuarios_admin', {token: authToken});
+    renderUsuariosAdmin();
+  } catch(err){
+    list.innerHTML = `<div class="empty-state">No se pudo cargar: ${err.message}</div>`;
+  }
+}
+
+function renderUsuariosAdmin(){
+  const list = document.getElementById('usuarios-admin-list');
+  if(!USUARIOS_ADMIN.length){
+    list.innerHTML = `<div class="empty-state">No hay usuarios registrados.</div>`;
+    return;
+  }
+  const ordenados = [...USUARIOS_ADMIN].sort((a,b) => (b.activo - a.activo) || String(a.nombre||'').localeCompare(String(b.nombre||'')));
+  list.innerHTML = ordenados.map(u => {
+    const rolLabel = ROL_LABEL_USUARIO[String(u.rol||'').toUpperCase()] || 'Miembro';
+    return `
+      <div class="admin-row" style="${u.activo ? '' : 'opacity:.5'}" onclick="abrirUsuario('${u.id}')">
+        <div class="ar-main" style="display:flex;align-items:center;gap:12px">
+          ${avatarCircularHTML(u.nombre, u.id, u.foto, 40)}
+          <div>
+            <div class="ar-title">${u.nombre || '(sin nombre)'}${u.activo ? '' : ' <span class="m-contacto-tag">Inactivo</span>'}</div>
+            <div class="ar-sub">${rolLabel}${u.departamentos ? ' · ' + u.departamentos : ''} · ${u.correo || 'sin correo'}</div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function abrirUsuario(id){
+  document.getElementById('usuario-error').style.display = 'none';
+  const btnDesactivar = document.getElementById('btn-desactivar-usuario');
+  const btnEliminar = document.getElementById('btn-eliminar-usuario');
+
+  if(id){
+    const u = USUARIOS_ADMIN.find(x => x.id === id);
+    if(!u) return;
+    document.getElementById('usuario-form-titulo').textContent = 'Editar usuario';
+    document.getElementById('usuario-id').value = u.id;
+    document.getElementById('usuario-nombre').value = u.nombre || '';
+    document.getElementById('usuario-correo').value = u.correo || '';
+    document.getElementById('usuario-rol').value = String(u.rol||'').toUpperCase();
+    document.getElementById('usuario-departamentos').value = u.departamentos || '';
+    renderAvatar(document.getElementById('usuario-foto-preview'), u.nombre, u.id, u.foto);
+    const esMismoUsuario = currentUser && String(currentUser.id) === String(u.id);
+    btnDesactivar.style.display = esMismoUsuario ? 'none' : 'block';
+    btnDesactivar.textContent = u.activo ? 'Desactivar' : 'Activar';
+    btnEliminar.style.display = esMismoUsuario ? 'none' : 'block';
+  } else {
+    document.getElementById('usuario-form-titulo').textContent = 'Nuevo usuario';
+    document.getElementById('usuario-id').value = '';
+    document.getElementById('usuario-nombre').value = '';
+    document.getElementById('usuario-correo').value = '';
+    document.getElementById('usuario-rol').value = '';
+    document.getElementById('usuario-departamentos').value = '';
+    renderAvatar(document.getElementById('usuario-foto-preview'), '?', 'nuevo-usuario');
+    btnDesactivar.style.display = 'none';
+    btnEliminar.style.display = 'none';
+  }
+  document.getElementById('usuario-overlay').style.display = 'flex';
+}
+
+function cerrarUsuario(){
+  document.getElementById('usuario-overlay').style.display = 'none';
+}
+
+async function guardarUsuario(){
+  const id = document.getElementById('usuario-id').value;
+  const errorEl = document.getElementById('usuario-error');
+  errorEl.style.display = 'none';
+  const nombre = document.getElementById('usuario-nombre').value.trim();
+  const correo = document.getElementById('usuario-correo').value.trim();
+  if(!nombre || !correo){
+    errorEl.textContent = 'El nombre y el correo son obligatorios.';
+    errorEl.style.display = 'block';
+    return;
+  }
+  const payload = {
+    token: authToken,
+    nombre,
+    correo,
+    rol: document.getElementById('usuario-rol').value,
+    departamentos: document.getElementById('usuario-departamentos').value.trim()
+  };
+  try{
+    if(id){
+      payload.id = id;
+      await apiPost('editar_usuario', payload);
+    } else {
+      await apiPost('crear_usuario', payload);
+    }
+    document.getElementById('usuario-overlay').style.display = 'none';
+    await loadUsuariosAdmin();
+    loadUsuariosActivos();
+  } catch(err){
+    errorEl.textContent = 'No se pudo guardar: ' + err.message;
+    errorEl.style.display = 'block';
+  }
+}
+
+async function cambiarEstadoUsuarioUI(){
+  const id = document.getElementById('usuario-id').value;
+  if(!id) return;
+  const u = USUARIOS_ADMIN.find(x => x.id === id);
+  if(!u) return;
+  const nuevoEstado = !u.activo;
+  const verbo = nuevoEstado ? 'activar' : 'desactivar';
+  if(!confirm(`¿Seguro que quieres ${verbo} a ${u.nombre}? ${nuevoEstado ? '' : 'Ya no podrá iniciar sesión ni aparecer en las listas de asignación.'}`)) return;
+  try{
+    await apiPost('cambiar_estado_usuario', {token: authToken, id, activo: nuevoEstado});
+    document.getElementById('usuario-overlay').style.display = 'none';
+    await loadUsuariosAdmin();
+    loadUsuariosActivos();
+  } catch(err){
+    alert('No se pudo actualizar: ' + err.message);
+  }
+}
+
+async function eliminarUsuarioUI(){
+  const id = document.getElementById('usuario-id').value;
+  if(!id) return;
+  if(!confirm('¿Eliminar este usuario definitivamente? Solo es posible si nunca ha tenido coberturas o solicitudes asignadas.')) return;
+  try{
+    await apiPost('eliminar_usuario', {token: authToken, id});
+    document.getElementById('usuario-overlay').style.display = 'none';
+    await loadUsuariosAdmin();
+    loadUsuariosActivos();
+  } catch(err){
+    alert(err.message);
+  }
+}
+
+/* ============ ADMIN/PASTOR: DASHBOARD ============ */
+
+let DASHBOARD_MES = new Date().getMonth() + 1;
+let DASHBOARD_ANIO = new Date().getFullYear();
+
+function cargarDashboardTab(){
+  const cont = document.getElementById('admin-tab-dashboard');
+  cont.innerHTML = `
+    <div class="roster-header">
+      <div class="roster-nav">
+        <button class="icon-btn-sm" onclick="cambiarMesDashboard(-1)" aria-label="Mes anterior">‹</button>
+        <span class="roster-mes-label" id="dashboard-mes-label"></span>
+        <button class="icon-btn-sm" onclick="cambiarMesDashboard(1)" aria-label="Mes siguiente">›</button>
+      </div>
+    </div>
+    <div id="dashboard-content"><div class="empty-state">Cargando...</div></div>
+  `;
+  loadDashboardStats();
+}
+
+function cambiarMesDashboard(delta){
+  DASHBOARD_MES += delta;
+  if(DASHBOARD_MES > 12){ DASHBOARD_MES = 1; DASHBOARD_ANIO++; }
+  if(DASHBOARD_MES < 1){ DASHBOARD_MES = 12; DASHBOARD_ANIO--; }
+  loadDashboardStats();
+}
+
+async function loadDashboardStats(){
+  document.getElementById('dashboard-mes-label').textContent = `${MESES_NOMBRE[DASHBOARD_MES-1]} ${DASHBOARD_ANIO}`;
+  const cont = document.getElementById('dashboard-content');
+  cont.innerHTML = `<div class="empty-state">Cargando...</div>`;
+  try{
+    const d = await apiGet('dashboard_stats', {token: authToken, mes: DASHBOARD_MES, anio: DASHBOARD_ANIO});
+    renderDashboardStats(d);
+  } catch(err){
+    cont.innerHTML = `<div class="empty-state">No se pudo cargar: ${err.message}</div>`;
+  }
+}
+
+function renderDashboardStats(d){
+  const cont = document.getElementById('dashboard-content');
+  const tile = (valor, label) => `<div class="dash-tile"><div class="dash-tile-valor">${valor}</div><div class="dash-tile-label">${label}</div></div>`;
+
+  const tiles = `<div class="dash-tiles">
+    ${tile(d.total, 'Solicitudes recibidas')}
+    ${tile(d.completadas, 'Completadas')}
+    ${tile(d.pctATiempo === null ? '—' : d.pctATiempo + '%', '% completadas a tiempo')}
+    ${tile(d.tiempoRespuestaPromedioDias === null ? '—' : d.tiempoRespuestaPromedioDias + ' días', 'Tiempo de respuesta promedio')}
+  </div>`;
+
+  const entriesRama = Object.entries(d.porRama || {}).sort((a,b) => b[1]-a[1]);
+  const maxRama = Math.max(1, ...entriesRama.map(e => e[1]));
+  const filasRama = entriesRama.length
+    ? entriesRama.map(([nombre, total]) => `
+        <div class="dash-bar-row">
+          <div class="dash-bar-label">${nombre}</div>
+          <div class="dash-bar-track"><div class="dash-bar-fill" style="width:${Math.round(total/maxRama*100)}%;background:${ramaColor([nombre])}"></div></div>
+          <div class="dash-bar-total">${total}</div>
+        </div>`).join('')
+    : `<div class="empty-state">Sin datos este mes.</div>`;
+
+  const porMinisterio = d.porMinisterio || [];
+  const maxMin = Math.max(1, ...porMinisterio.map(m => m.total));
+  const filasMin = porMinisterio.length
+    ? porMinisterio.map(m => `
+        <div class="dash-bar-row">
+          <div class="dash-bar-label">${m.ministerio}</div>
+          <div class="dash-bar-track"><div class="dash-bar-fill" style="width:${Math.round(m.total/maxMin*100)}%"></div></div>
+          <div class="dash-bar-total">${m.total}</div>
+        </div>`).join('')
+    : `<div class="empty-state">Sin datos este mes.</div>`;
+
+  cont.innerHTML = `
+    ${tiles}
+    <div class="admin-note" style="margin:22px 0 10px;color:var(--white);font-weight:600">Solicitudes por rama</div>
+    <div class="dash-bars">${filasRama}</div>
+    <div class="admin-note" style="margin:22px 0 10px;color:var(--white);font-weight:600">Ministerios que más solicitan</div>
+    <div class="dash-bars">${filasMin}</div>
+  `;
 }
 
 /* ============ EVENTOS DE LA SEMANA ============ */
@@ -1790,10 +2104,12 @@ function aplicarSesion(){
   ES_ADMIN_O_LIDER = esAdmin || esLider;
 
   setTabVisibility('solicitudes', !esPastor);
-  setTabVisibility('eventos', esAdmin);
+  setTabVisibility('eventos', esAdmin || esLider);
   setTabVisibility('programacion', esAdmin || esLider);
   setTabVisibility('mistareas', !esPastor);
   setTabVisibility('directorio-admin', true);
+  setTabVisibility('dashboard', esAdmin || esPastor);
+  setTabVisibility('usuarios-admin', esAdmin);
   const esMiembro = !esAdmin && !esLider && !esPastor;
   document.getElementById('btn-ver-calendario-equipo').style.display = esMiembro ? 'inline-flex' : 'none';
   document.getElementById('volver-mis-tareas-link').style.display = esMiembro ? 'inline-block' : 'none';
@@ -1810,9 +2126,10 @@ function aplicarSesion(){
     loadUsuariosActivos();
     loadMisTareas();
     loadSolicitudesAdmin();
+    loadEventosAdmin();
     switchAdminTab('programacion');
   } else if(esPastor){
-    switchAdminTab('directorio-admin');
+    switchAdminTab('dashboard');
   } else {
     loadSolicitudesAdmin();
     switchAdminTab('mistareas');
@@ -1933,6 +2250,8 @@ function switchAdminTab(tab){
   document.getElementById('admin-tab-programacion').classList.toggle('active', tab==='programacion');
   document.getElementById('admin-tab-mistareas').classList.toggle('active', tab==='mistareas');
   document.getElementById('admin-tab-directorio-admin').classList.toggle('active', tab==='directorio-admin');
+  document.getElementById('admin-tab-dashboard').classList.toggle('active', tab==='dashboard');
+  document.getElementById('admin-tab-usuarios-admin').classList.toggle('active', tab==='usuarios-admin');
   if(ES_ADMIN_O_LIDER && USUARIOS_ACTIVOS.length === 0){
     loadUsuariosActivos();
   }
@@ -1947,6 +2266,12 @@ function switchAdminTab(tab){
   }
   if(tab === 'directorio-admin'){
     cargarDirectorioTab();
+  }
+  if(tab === 'dashboard'){
+    cargarDashboardTab();
+  }
+  if(tab === 'usuarios-admin'){
+    cargarUsuariosAdminTab();
   }
 }
 
@@ -2218,7 +2543,7 @@ function abrirFormEvento(id){
       document.getElementById('evt-ministerio').value = ev.ministerioId || '';
       document.getElementById('evt-lugar').value = ev.lugar || '';
     }
-    btnEliminar.style.display = 'block';
+    btnEliminar.style.display = String(currentUser.rol||'').toUpperCase() === 'ADMIN' ? 'block' : 'none';
   } else {
     document.getElementById('evento-form-titulo').textContent = 'Nuevo evento';
     document.getElementById('evt-ministerio').value = '';
@@ -2539,6 +2864,7 @@ async function enviarSolicitudSwap(){
 }
 
 function abrirFormCobertura(id, eventoId, departamento){
+  document.getElementById('cobertura-form-msg').style.display = 'none';
   document.getElementById('cob-id').value = '';
   document.getElementById('cob-evento-id').value = eventoId || '';
   document.getElementById('cob-departamento').value = departamento || 'Foto & Video';
@@ -2605,26 +2931,50 @@ async function eliminarCoberturaUI(){
 async function guardarCobertura(){
   const id = document.getElementById('cob-id').value;
   const eventoId = document.getElementById('cob-evento-id').value;
+  const departamento = document.getElementById('cob-departamento').value;
   const payload = {
     token: authToken,
     id,
     eventoId,
-    departamento: document.getElementById('cob-departamento').value,
+    departamento,
     personaAsignadaId: document.getElementById('cob-persona').value,
     rolCobertura: document.getElementById('cob-rol').value.trim(),
     estado: document.getElementById('cob-estado').value
   };
+  const btn = document.getElementById('btn-guardar-cobertura');
+  const msg = document.getElementById('cobertura-form-msg');
+  const textoOriginal = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+  msg.style.display = 'none';
   try{
     await apiPost(id ? 'editar_cobertura' : 'crear_cobertura', payload);
-    document.getElementById('cobertura-overlay').style.display = 'none';
-    const recargar = modalRecargarA;
-    limpiarVolverA();
-    if(recargar){ await recargar(); }
-    if(ROSTER_DATA) await loadRoster();
-    loadEventosAdmin();
-    loadEventos();
+
+    const tareas = [loadEventosAdmin(), loadEventos()];
+    if(ROSTER_DATA) tareas.push(loadRoster());
+    if(EVENTO_DETALLE_ACTUAL && EVENTO_DETALLE_ACTUAL.id === eventoId){
+      tareas.push(apiGet('evento_detalle', {token: authToken, eventoId}).then(d => { EVENTO_DETALLE_ACTUAL = d; }));
+    }
+    await Promise.all(tareas);
+
+    msg.style.color = 'var(--green)';
+    msg.textContent = '✓ Cobertura guardada correctamente. Puedes agregar otra persona.';
+    msg.style.display = 'block';
+
+    document.getElementById('cobertura-form-titulo').textContent = 'Nueva cobertura';
+    document.getElementById('cob-id').value = '';
+    document.getElementById('cob-departamento').value = departamento;
+    document.getElementById('cob-persona').value = '';
+    document.getElementById('cob-rol').value = '';
+    document.getElementById('cob-estado').value = 'Pendiente';
+    document.getElementById('btn-eliminar-cobertura').style.display = 'none';
   } catch(err){
-    alert('No se pudo guardar la cobertura: ' + err.message);
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'No se pudo guardar: ' + err.message;
+    msg.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
   }
 }
 
