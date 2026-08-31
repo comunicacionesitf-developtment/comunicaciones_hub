@@ -783,7 +783,10 @@
       </div>
 
       <div class="tab-content active" id="admin-tab-solicitudes">
-        <div class="admin-note" style="margin-bottom:14px">Solicitudes recibidas del formulario público — dale seguimiento, vincúlalas a un evento y asigna responsable.</div>
+        <div class="form-footer" style="margin-bottom:10px">
+          <div class="admin-note" style="margin-bottom:0">Solicitudes recibidas del formulario público — dale seguimiento, vincúlalas a un evento y asigna responsable.</div>
+          <button class="btn btn-primary btn-sm" onclick="abrirSolicitudInterna()">+ Nueva solicitud interna</button>
+        </div>
         <div class="roster-dias" style="margin-bottom:16px">
           <div class="roster-day-tab sol-mini-tab active" data-sol-tab="recibida" onclick="switchSolicitudesTab('recibida')" id="sol-tab-recibidas">Recibidas</div>
           <div class="roster-day-tab sol-mini-tab" data-sol-tab="proceso" onclick="switchSolicitudesTab('proceso')" id="sol-tab-proceso">En proceso</div>
@@ -1114,6 +1117,62 @@
     <button class="btn btn-primary" style="width:100%" onclick="guardarUsuario()">Guardar usuario</button>
     <button class="btn btn-outline" id="btn-desactivar-usuario" style="width:100%;margin-top:10px;display:none" onclick="cambiarEstadoUsuarioUI()">Desactivar</button>
     <button class="btn btn-outline" id="btn-eliminar-usuario" style="width:100%;margin-top:10px;display:none" onclick="eliminarUsuarioUI()">Eliminar usuario</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="solicitud-interna-overlay" style="display:none">
+  <div class="modal-box" style="max-width:480px">
+    <button class="modal-close" onclick="cerrarSolicitudInterna()" aria-label="Cerrar">&times;</button>
+    <h3>Nueva solicitud interna</h3>
+    <div class="hint" style="margin-bottom:18px">Para pedirle apoyo a otra rama del equipo de Comunicaciones. El día a día lo pueden seguir por WhatsApp, pero por favor marquen las etapas importantes aquí en el HUB — sobre todo cuando quede completada.</div>
+
+    <div class="field">
+      <label>¿Para quién es esta solicitud? *</label>
+      <select id="si-miembro" required onchange="onSeleccionarMiembroInterno()">
+        <option value="">Selecciona un miembro del equipo</option>
+      </select>
+    </div>
+    <div class="field-row two">
+      <div class="field"><label>Correo *</label><input type="email" id="si-correo" required></div>
+      <div class="field"><label>Teléfono de contacto *</label><input type="tel" id="si-telefono" placeholder="7000-0000" required></div>
+    </div>
+    <div class="field">
+      <label>Contexto / descripción *</label>
+      <textarea id="si-contexto" required placeholder="Qué necesitas y para qué actividad"></textarea>
+    </div>
+    <div class="field">
+      <label>¿Qué tipo de solicitud es? *</label>
+      <select id="si-tipo-solicitud" required>
+        <option value="">Selecciona una opción</option>
+        <option value="Evento o actividad">Evento o actividad</option>
+        <option value="Diseño de piezas gráficas">Diseño de piezas gráficas</option>
+        <option value="Otro">Otro</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Tipo de apoyo * <span class="hint">(puedes elegir más de uno)</span></label>
+      <div class="chip-group" id="si-tipo-apoyo">
+        <label class="chip"><input type="checkbox" value="Diseño"> Diseño</label>
+        <label class="chip"><input type="checkbox" value="Foto"> Foto</label>
+        <label class="chip"><input type="checkbox" value="Video"> Video</label>
+        <label class="chip"><input type="checkbox" value="Redes"> Redes</label>
+      </div>
+    </div>
+    <div class="field" id="si-piezas-wrap" style="display:none">
+      <label>Cantidad de piezas de diseño</label>
+      <input type="number" id="si-piezas" min="1" placeholder="Ej. 3">
+    </div>
+    <div class="field-row two">
+      <div class="field"><label>Fecha estimada *</label><input type="date" id="si-fecha" required></div>
+      <div class="field"><label>Lugar</label><input type="text" id="si-lugar" placeholder="Opcional"></div>
+    </div>
+    <div class="field">
+      <label>Archivo(s) de referencia <span class="hint">(máx. 20 MB)</span></label>
+      <input type="file" id="si-archivo" multiple accept="image/*,.pdf">
+    </div>
+
+    <div class="hint" id="si-error" style="color:var(--red);display:none;margin:12px 0"></div>
+    <button class="btn btn-primary" style="width:100%" id="si-btn-guardar" onclick="guardarSolicitudInterna()">Crear solicitud</button>
   </div>
 </div>
 
@@ -2600,6 +2659,103 @@ document.getElementById('f-tipo-apoyo').addEventListener('change', (e)=>{
   document.getElementById('f-piezas-wrap').style.display = disenoChecked ? 'block' : 'none';
 });
 
+document.getElementById('si-tipo-apoyo').addEventListener('change', (e)=>{
+  const chip = e.target.closest('.chip');
+  if(chip) chip.classList.toggle('checked', e.target.checked);
+  const disenoChecked = [...document.querySelectorAll('#si-tipo-apoyo input')].some(i=>i.value==='Diseño' && i.checked);
+  document.getElementById('si-piezas-wrap').style.display = disenoChecked ? 'block' : 'none';
+});
+
+/* ============ SOLICITUDES INTERNAS (equipo logeado) ============ */
+
+function abrirSolicitudInterna(){
+  const errorEl = document.getElementById('si-error');
+  errorEl.style.display = 'none';
+
+  const llenarDropdown = () => {
+    document.getElementById('si-miembro').innerHTML = `<option value="">Selecciona un miembro del equipo</option>` +
+      USUARIOS_ACTIVOS.map(u => `<option value="${u.id}">${u.nombre}</option>`).join('');
+  };
+  llenarDropdown();
+  if(!USUARIOS_ACTIVOS.length) loadUsuariosActivos().then(llenarDropdown);
+
+  document.getElementById('si-correo').value = '';
+  document.getElementById('si-telefono').value = '';
+  document.getElementById('si-contexto').value = '';
+  document.getElementById('si-tipo-solicitud').value = '';
+  document.querySelectorAll('#si-tipo-apoyo input').forEach(i => { i.checked = false; i.closest('.chip').classList.remove('checked'); });
+  document.getElementById('si-piezas-wrap').style.display = 'none';
+  document.getElementById('si-piezas').value = '';
+  document.getElementById('si-fecha').value = '';
+  document.getElementById('si-lugar').value = '';
+  document.getElementById('si-archivo').value = '';
+
+  document.getElementById('solicitud-interna-overlay').style.display = 'flex';
+}
+
+function cerrarSolicitudInterna(){
+  document.getElementById('solicitud-interna-overlay').style.display = 'none';
+}
+
+function onSeleccionarMiembroInterno(){
+  const id = document.getElementById('si-miembro').value;
+  const u = USUARIOS_ACTIVOS.find(x => x.id === id);
+  document.getElementById('si-correo').value = (u && u.correo) || '';
+}
+
+async function guardarSolicitudInterna(){
+  const errorEl = document.getElementById('si-error');
+  errorEl.style.display = 'none';
+
+  const miembroId = document.getElementById('si-miembro').value;
+  const miembro = USUARIOS_ACTIVOS.find(u => u.id === miembroId);
+  const tipos = [...document.querySelectorAll('#si-tipo-apoyo input:checked')].map(i => i.value);
+  const correo = document.getElementById('si-correo').value.trim();
+  const telefono = document.getElementById('si-telefono').value.trim();
+  const contexto = document.getElementById('si-contexto').value.trim();
+  const tipoSolicitud = document.getElementById('si-tipo-solicitud').value;
+  const fecha = document.getElementById('si-fecha').value;
+
+  if(!miembro){ errorEl.textContent = 'Selecciona para quién es la solicitud.'; errorEl.style.display = 'block'; return; }
+  if(!tipos.length){ errorEl.textContent = 'Selecciona al menos un tipo de apoyo.'; errorEl.style.display = 'block'; return; }
+  if(!correo || !telefono || !contexto || !tipoSolicitud || !fecha){
+    errorEl.textContent = 'Completa los campos obligatorios.'; errorEl.style.display = 'block'; return;
+  }
+
+  const comunicaciones = MINISTERIOS.find(m => String(m.ministerio||'').trim().toUpperCase() === 'COMUNICACIONES');
+  if(!comunicaciones){
+    errorEl.textContent = 'No se encontró el ministerio "Comunicaciones" en el directorio.'; errorEl.style.display = 'block'; return;
+  }
+
+  const files = [...document.getElementById('si-archivo').files];
+  const tamañoTotal = files.reduce((s,f) => s + f.size, 0);
+  if(tamañoTotal > 20 * 1024 * 1024){
+    errorEl.textContent = 'Los archivos superan 20 MB en total.'; errorEl.style.display = 'block'; return;
+  }
+
+  const btn = document.getElementById('si-btn-guardar');
+  const textoOriginal = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Creando...';
+  try{
+    const archivos = await Promise.all(files.map(leerArchivoComoBase64));
+    await apiPost('solicitud', {
+      token: authToken, origen: 'Interna',
+      ministerioId: comunicaciones.ministerioId, lider: miembro.nombre,
+      correo, telefono, contexto, tipos, tipoSolicitud,
+      cantidadPiezas: document.getElementById('si-piezas').value || '',
+      fechaEvento: fecha, lugar: document.getElementById('si-lugar').value.trim(),
+      archivos
+    });
+    cerrarSolicitudInterna();
+    loadSolicitudesAdmin();
+  } catch(err){
+    errorEl.textContent = 'No se pudo crear: ' + err.message;
+    errorEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = textoOriginal;
+  }
+}
+
 function leerArchivoComoBase64(file){
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -3847,7 +4003,7 @@ function renderSolicitudesAdmin(){
     const colorDept = ramaColor([s.departamento]);
     return `<div class="admin-row" style="border-left:3px solid ${colorDept}" onclick="abrirDetalleSolicitud('${s.id}')">
       <div class="ar-main">
-        <div class="ar-title"><span class="rama-dot" style="background:${colorDept}"></span>${s.id} · ${s.ministerio || 'Sin ministerio'}</div>
+        <div class="ar-title"><span class="rama-dot" style="background:${colorDept}"></span>${s.id} · ${s.ministerio || 'Sin ministerio'}${s.origen === 'Interna' ? ' <span class="m-contacto-tag">Interna</span>' : ''}</div>
         <div class="ar-sub">${s.lider} · ${s.tipos.join(', ')}${s.evento ? ' · vinculada a ' + s.evento : ''}${s.fechaEvento ? ' · ' + formatFechaEvento(s.fechaEvento) : ''}</div>
       </div>
       <div class="ar-side">
