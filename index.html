@@ -349,6 +349,11 @@
   .icon-btn-sm:hover{border-color:var(--gold);color:var(--gold-light)}
 
   /* ---------- Dashboard ---------- */
+  .dashboard-section{
+    background:var(--bg-panel-2);border:1px solid var(--border);border-radius:var(--radius-card);
+    padding:20px;margin-bottom:25px;
+  }
+  .dashboard-section:last-child{margin-bottom:0}
   .dash-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
   .dash-tile{
     background:var(--bg-panel-2);border:1px solid var(--border);border-radius:14px;
@@ -830,12 +835,18 @@
       </div>
 
       <div class="tab-content" id="admin-tab-dashboard">
-        <div class="admin-note" id="dashboard-mistareas-heading" style="display:none;margin-bottom:8px;color:var(--white);font-weight:700;font-size:1rem">Mi Programación</div>
-        <div id="dashboard-mistareas-slot" style="margin-bottom:26px"></div>
-        <div class="admin-note" id="dashboard-stats-heading" style="margin-bottom:8px;color:var(--white);font-weight:700;font-size:1rem">Estadísticas del mes</div>
-        <div id="dashboard-stats-slot"></div>
-        <div class="admin-note" id="dashboard-usuarios-heading" style="display:none;margin:26px 0 8px;color:var(--white);font-weight:700;font-size:1rem">Equipo</div>
-        <div id="dashboard-usuarios-slot"></div>
+        <div class="dashboard-section" id="dashboard-mistareas-section" style="display:none">
+          <div class="admin-note" style="margin-bottom:8px;color:var(--white);font-weight:700;font-size:1rem">Mi Programación</div>
+          <div id="dashboard-mistareas-slot"></div>
+        </div>
+        <div class="dashboard-section">
+          <div class="admin-note" style="margin-bottom:8px;color:var(--white);font-weight:700;font-size:1rem">Estadísticas del mes</div>
+          <div id="dashboard-stats-slot"></div>
+        </div>
+        <div class="dashboard-section" id="dashboard-usuarios-section" style="display:none">
+          <div class="admin-note" style="margin-bottom:8px;color:var(--white);font-weight:700;font-size:1rem">Equipo</div>
+          <div id="dashboard-usuarios-slot"></div>
+        </div>
       </div>
 
       <div class="tab-content" id="admin-tab-artes"></div>
@@ -859,10 +870,14 @@
       <label>Nombre del evento *</label>
       <input type="text" id="evt-nombre" placeholder="Ej. Miércoles de Intimidad">
     </div>
-    <div class="field-row two">
+    <div class="field-row three">
       <div class="field">
         <label>Fecha *</label>
         <input type="date" id="evt-fecha">
+      </div>
+      <div class="field">
+        <label>Hora <span class="hint">(opcional)</span></label>
+        <input type="time" id="evt-hora">
       </div>
       <div class="field">
         <label>Estado</label>
@@ -3058,6 +3073,9 @@ function formatFechaEvento(iso){
   const d = new Date(iso);
   if(isNaN(d)) return String(iso);
   const dia = d.toLocaleDateString('es-SV', {weekday:'short', day:'2-digit', month:'short'});
+  // medianoche exacta casi siempre significa "sin hora definida" (evento sin hora en el formulario),
+  // no una hora real — se omite para no mostrar un dato falso como "12:00 a.m."
+  if(d.getHours() === 0 && d.getMinutes() === 0) return dia;
   const hora = d.toLocaleTimeString('es-SV', {hour:'numeric', minute:'2-digit'});
   return `${dia} · ${hora}`;
 }
@@ -3592,22 +3610,22 @@ function aplicarSesion(){
 
   // Para Admin: "Mi Programación" y "Usuarios" se incrustan dentro de Dashboard.
   const mistareasNodo = document.getElementById('admin-tab-mistareas');
-  const dashMisTareasHeading = document.getElementById('dashboard-mistareas-heading');
-  const dashUsuariosHeading = document.getElementById('dashboard-usuarios-heading');
+  const dashMisTareasSection = document.getElementById('dashboard-mistareas-section');
+  const dashUsuariosSection = document.getElementById('dashboard-usuarios-section');
   if(esAdmin){
     document.getElementById('dashboard-mistareas-slot').appendChild(mistareasNodo);
     mistareasNodo.classList.remove('tab-content', 'active');
     mistareasNodo.style.display = 'block';
-    dashMisTareasHeading.style.display = 'block';
-    dashUsuariosHeading.style.display = 'block';
+    dashMisTareasSection.style.display = 'block';
+    dashUsuariosSection.style.display = 'block';
     MISTAREAS_EMBEBIDO_EN_DASHBOARD = true;
     USUARIOS_EMBEBIDO_EN_DASHBOARD = true;
   } else {
     document.getElementById('panel-admin').appendChild(mistareasNodo);
     mistareasNodo.classList.add('tab-content');
     mistareasNodo.style.display = '';
-    dashMisTareasHeading.style.display = 'none';
-    dashUsuariosHeading.style.display = 'none';
+    dashMisTareasSection.style.display = 'none';
+    dashUsuariosSection.style.display = 'none';
     MISTAREAS_EMBEBIDO_EN_DASHBOARD = false;
     USUARIOS_EMBEBIDO_EN_DASHBOARD = false;
   }
@@ -4032,10 +4050,20 @@ function formatFechaInput(iso){
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 }
 
+function formatHoraInput(iso){
+  const d = new Date(iso);
+  if(isNaN(d)) return '';
+  // si la hora es medianoche exacta, lo tratamos como "sin hora definida" en vez de mostrar un dato falso
+  if(d.getHours() === 0 && d.getMinutes() === 0) return '';
+  const pad = n => String(n).padStart(2,'0');
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function abrirFormEvento(id){
   document.getElementById('evt-id').value = '';
   document.getElementById('evt-nombre').value = '';
   document.getElementById('evt-fecha').value = '';
+  document.getElementById('evt-hora').value = '';
   document.getElementById('evt-estado').value = 'Programado';
   document.getElementById('evt-lugar').value = '';
 
@@ -4053,6 +4081,7 @@ function abrirFormEvento(id){
       document.getElementById('evt-id').value = ev.id;
       document.getElementById('evt-nombre').value = ev.nombre;
       document.getElementById('evt-fecha').value = formatFechaInput(ev.fecha);
+      document.getElementById('evt-hora').value = formatHoraInput(ev.fecha);
       document.getElementById('evt-estado').value = ev.estado;
       document.getElementById('evt-ministerio').value = ev.ministerioId || '';
       document.getElementById('evt-lugar').value = ev.lugar || '';
@@ -4076,11 +4105,13 @@ async function guardarEvento(){
   if(btn.disabled) return;
 
   const id = document.getElementById('evt-id').value;
+  const fechaBase = document.getElementById('evt-fecha').value;
+  const hora = document.getElementById('evt-hora').value;
   const payload = {
     token: authToken,
     id,
     nombre: document.getElementById('evt-nombre').value.trim(),
-    fecha: document.getElementById('evt-fecha').value,
+    fecha: hora && fechaBase ? `${fechaBase}T${hora}:00` : fechaBase,
     estado: document.getElementById('evt-estado').value,
     ministerioId: document.getElementById('evt-ministerio').value,
     lugar: document.getElementById('evt-lugar').value.trim()
