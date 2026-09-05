@@ -348,6 +348,35 @@
   }
   .icon-btn-sm:hover{border-color:var(--gold);color:var(--gold-light)}
 
+  /* ---------- Sidebar del panel admin (desktop) ---------- */
+  .admin-layout{display:flex;align-items:flex-start;gap:22px}
+  .admin-sidebar{
+    width:212px;flex-shrink:0;display:flex;flex-direction:column;gap:3px;
+    transition:width .18s ease;
+  }
+  .admin-sidebar.collapsed{width:56px}
+  .admin-sidebar-toggle{
+    display:flex;align-items:center;justify-content:center;
+    background:var(--bg-panel-2);border:1px solid var(--border);border-radius:10px;
+    color:var(--lilac-dim);cursor:pointer;padding:10px;margin-bottom:10px;width:100%;
+  }
+  .admin-sidebar-toggle:hover{border-color:var(--gold);color:var(--gold-light)}
+  .admin-sidebar-toggle svg{width:17px;height:17px;flex-shrink:0}
+  .admin-sidebar-link{
+    display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;
+    background:none;border:none;color:var(--lilac-dim);cursor:pointer;text-align:left;width:100%;
+    font-size:.86rem;font-weight:500;white-space:nowrap;overflow:hidden;
+  }
+  .admin-sidebar-link:hover{background:var(--bg-panel-2);color:var(--lilac)}
+  .admin-sidebar-link.active{background:rgba(234,179,8,.12);color:var(--gold-light)}
+  .admin-sidebar-icon{width:19px;height:19px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+  .admin-sidebar-icon svg{width:19px;height:19px}
+  .admin-sidebar-label{overflow:hidden;text-overflow:ellipsis}
+  .admin-sidebar.collapsed .admin-sidebar-label{display:none}
+  .admin-sidebar.collapsed .admin-sidebar-link{justify-content:center;padding:10px}
+  .admin-content{flex:1;min-width:0}
+  .bienvenida-icono svg{width:18px;height:18px}
+
   /* ---------- Dashboard ---------- */
   .dashboard-section{
     background:var(--bg-panel-2);border:1px solid var(--border);border-radius:var(--radius-card);
@@ -459,7 +488,8 @@
     .event-card{min-width:260px;scroll-snap-align:start;flex-direction:column;padding:16px 14px 13px}
     .e-accent-bar{top:0;left:0;right:0;bottom:auto;width:auto;height:4px}
 
-    #panel-admin .tabs{display:none}
+    .admin-sidebar{display:none}
+    .admin-layout{display:block}
     #panel-admin{padding-bottom:14px}
     main{padding-bottom:88px}
 
@@ -537,6 +567,9 @@
     <button class="icon-btn-sm" onclick="abrirDirectorioModal()" title="Directorio de ministerios" aria-label="Directorio de ministerios">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="10" r="2.5"/><path d="M8 17c0-2 1.8-3.5 4-3.5s4 1.5 4 3.5"/></svg>
     </button>
+    <button class="icon-btn-sm" onclick="mostrarBienvenida()" title="Ver la bienvenida de nuevo" aria-label="Ver la bienvenida de nuevo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="9"/><path d="M9.4 9.2a2.6 2.6 0 0 1 5.1.6c0 1.6-2.1 1.9-2.1 3.6"/><path d="M12 17.2h.01"/></svg>
+    </button>
     <button class="icon-btn-sm" onclick="logout()" title="Cerrar sesión" aria-label="Cerrar sesión">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
     </button>
@@ -548,6 +581,16 @@
     <button class="modal-close" onclick="cerrarDirectorioModal()" aria-label="Cerrar">&times;</button>
     <h3>Directorio de ministerios</h3>
     <div id="directorio-modal-content" style="margin-top:14px;max-height:70vh;overflow-y:auto"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="bienvenida-overlay" style="display:none">
+  <div class="modal-box" style="max-width:460px">
+    <button class="modal-close" onclick="cerrarBienvenida()" aria-label="Cerrar">&times;</button>
+    <h3 id="bienvenida-titulo">¡Bienvenido!</h3>
+    <div class="hint" style="margin-bottom:18px">Esto es lo que puedes hacer con tu perfil:</div>
+    <div id="bienvenida-lista" style="display:flex;flex-direction:column;gap:14px;margin-bottom:22px"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="cerrarBienvenida()">Entendido, empezar</button>
   </div>
 </div>
 
@@ -744,41 +787,38 @@
     </div>
 
     <div class="panel request-panel" id="panel-admin" style="display:none">
-      <div class="tabs">
-        <button class="btn btn-outline btn-sm" data-admin-tab="mistareas" onclick="switchAdminTab('mistareas')">Mi Programación</button>
-        <button class="btn btn-outline btn-sm active" data-admin-tab="solicitudes" onclick="switchAdminTab('solicitudes')">Solicitudes</button>
-        <button class="btn btn-outline btn-sm" data-admin-tab="eventos" onclick="switchAdminTab('eventos')">Eventos</button>
-        <button class="btn btn-outline btn-sm" data-admin-tab="programacion" onclick="switchAdminTab('programacion')">Programación</button>
-        <button class="btn btn-outline btn-sm tab-hidden" data-admin-tab="dashboard" onclick="switchAdminTab('dashboard')">Dashboard</button>
-        <button class="btn btn-outline btn-sm tab-hidden" data-admin-tab="artes" onclick="switchAdminTab('artes')">Generador de Artes</button>
-      </div>
+      <div class="admin-layout">
+        <nav class="admin-sidebar" id="admin-sidebar">
+          <button class="admin-sidebar-toggle" onclick="toggleAdminSidebar()" aria-label="Colapsar o expandir menú" title="Colapsar o expandir menú">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg>
+          </button>
+          <button class="admin-sidebar-link" data-admin-tab="mistareas" onclick="switchAdminTab('mistareas')">
+            <span class="admin-sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span>
+            <span class="admin-sidebar-label">Mi Programación</span>
+          </button>
+          <button class="admin-sidebar-link active" data-admin-tab="solicitudes" onclick="switchAdminTab('solicitudes')">
+            <span class="admin-sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.2" width="6" height="3.6" rx="1"/><path d="M9 11h6M9 15h6"/></svg></span>
+            <span class="admin-sidebar-label">Solicitudes</span>
+          </button>
+          <button class="admin-sidebar-link" data-admin-tab="eventos" onclick="switchAdminTab('eventos')">
+            <span class="admin-sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8.5 15l2 2 4.5-4.5"/></svg></span>
+            <span class="admin-sidebar-label">Eventos</span>
+          </button>
+          <button class="admin-sidebar-link" data-admin-tab="programacion" onclick="switchAdminTab('programacion')">
+            <span class="admin-sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9.5h18M9 9.5v10.5"/></svg></span>
+            <span class="admin-sidebar-label">Programación</span>
+          </button>
+          <button class="admin-sidebar-link tab-hidden" data-admin-tab="dashboard" onclick="switchAdminTab('dashboard')">
+            <span class="admin-sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V10M11 19V5M18 19v-6"/></svg></span>
+            <span class="admin-sidebar-label">Dashboard</span>
+          </button>
+          <button class="admin-sidebar-link tab-hidden" data-admin-tab="artes" onclick="switchAdminTab('artes')">
+            <span class="admin-sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M21 15l-5-5-9 9"/></svg></span>
+            <span class="admin-sidebar-label">Generador de Artes</span>
+          </button>
+        </nav>
 
-      <nav class="mobile-nav" id="mobile-nav">
-        <button class="mobile-nav-btn" data-admin-tab="mistareas" onclick="switchAdminTab('mistareas')">
-          <span class="mobile-nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span>
-          <span>Mi Programación</span>
-        </button>
-        <button class="mobile-nav-btn active" data-admin-tab="solicitudes" onclick="switchAdminTab('solicitudes')">
-          <span class="mobile-nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.2" width="6" height="3.6" rx="1"/><path d="M9 11h6M9 15h6"/></svg></span>
-          <span>Solicitudes</span>
-        </button>
-        <button class="mobile-nav-btn" data-admin-tab="eventos" onclick="switchAdminTab('eventos')">
-          <span class="mobile-nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8.5 15l2 2 4.5-4.5"/></svg></span>
-          <span>Eventos</span>
-        </button>
-        <button class="mobile-nav-btn" data-admin-tab="programacion" onclick="switchAdminTab('programacion')">
-          <span class="mobile-nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9.5h18M9 9.5v10.5"/></svg></span>
-          <span>Programación</span>
-        </button>
-        <button class="mobile-nav-btn tab-hidden" data-admin-tab="dashboard" onclick="switchAdminTab('dashboard')">
-          <span class="mobile-nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V10M11 19V5M18 19v-6"/></svg></span>
-          <span>Dashboard</span>
-        </button>
-        <button class="mobile-nav-btn tab-hidden" data-admin-tab="artes" onclick="switchAdminTab('artes')">
-          <span class="mobile-nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M21 15l-5-5-9 9"/></svg></span>
-          <span>Artes</span>
-        </button>
-      </nav>
+        <div class="admin-content">
 
       <div class="tab-content" id="admin-tab-mistareas">
         <div class="admin-note" style="margin-bottom:14px">Tus próximas coberturas asignadas y las solicitudes que te han encargado dar seguimiento.</div>
@@ -850,6 +890,36 @@
       </div>
 
       <div class="tab-content" id="admin-tab-artes"></div>
+
+        </div>
+      </div>
+
+      <nav class="mobile-nav" id="mobile-nav">
+        <button class="mobile-nav-btn" data-admin-tab="mistareas" onclick="switchAdminTab('mistareas')">
+          <span class="mobile-nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span>
+          <span>Mi Programación</span>
+        </button>
+        <button class="mobile-nav-btn active" data-admin-tab="solicitudes" onclick="switchAdminTab('solicitudes')">
+          <span class="mobile-nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.2" width="6" height="3.6" rx="1"/><path d="M9 11h6M9 15h6"/></svg></span>
+          <span>Solicitudes</span>
+        </button>
+        <button class="mobile-nav-btn" data-admin-tab="eventos" onclick="switchAdminTab('eventos')">
+          <span class="mobile-nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8.5 15l2 2 4.5-4.5"/></svg></span>
+          <span>Eventos</span>
+        </button>
+        <button class="mobile-nav-btn" data-admin-tab="programacion" onclick="switchAdminTab('programacion')">
+          <span class="mobile-nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9.5h18M9 9.5v10.5"/></svg></span>
+          <span>Programación</span>
+        </button>
+        <button class="mobile-nav-btn tab-hidden" data-admin-tab="dashboard" onclick="switchAdminTab('dashboard')">
+          <span class="mobile-nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V10M11 19V5M18 19v-6"/></svg></span>
+          <span>Dashboard</span>
+        </button>
+        <button class="mobile-nav-btn tab-hidden" data-admin-tab="artes" onclick="switchAdminTab('artes')">
+          <span class="mobile-nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M21 15l-5-5-9 9"/></svg></span>
+          <span>Artes</span>
+        </button>
+      </nav>
     </div>
 
     <aside class="panel events-panel">
@@ -3571,6 +3641,7 @@ function aplicarSesion(){
   document.getElementById('panel-publico').style.display = 'none';
   document.getElementById('panel-admin').style.display = 'block';
   ES_ADMIN_O_LIDER = esAdmin || esLider;
+  restaurarEstadoSidebar();
 
   // Máximo 5 pestañas por perfil: Directorio vive en el header (ícono), y para
   // Admin, Mi Programación + Usuarios se incrustan dentro de Dashboard en vez
@@ -3650,6 +3721,8 @@ function aplicarSesion(){
     loadSolicitudesAdmin();
     switchAdminTab('mistareas');
   }
+
+  if(!localStorage.getItem('hub_onboarding_visto')) mostrarBienvenida();
 }
 
 let CERRANDO_SESION = false;
@@ -3765,12 +3838,70 @@ let USUARIOS_ACTIVOS = [];
 
 let ES_ADMIN_O_LIDER = false;
 
+const ONBOARDING_ITEMS = {
+  ADMIN: [
+    {icono:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.2" width="6" height="3.6" rx="1"/><path d="M9 11h6M9 15h6"/></svg>', titulo:'Solicitudes', texto:'Da seguimiento a las peticiones de los ministerios y crea solicitudes internas del equipo.'},
+    {icono:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8.5 15l2 2 4.5-4.5"/></svg>', titulo:'Eventos', texto:'Crea y edita los eventos que alimentan el calendario y las coberturas.'},
+    {icono:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9.5h18M9 9.5v10.5"/></svg>', titulo:'Programación', texto:'Asigna quién cubre cada actividad — foto, video, redes y diseño.'},
+    {icono:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V10M11 19V5M18 19v-6"/></svg>', titulo:'Dashboard', texto:'Tu programación, las estadísticas del mes y el equipo, todo en una sola pantalla.'},
+    {icono:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M21 15l-5-5-9 9"/></svg>', titulo:'Generador de Artes', texto:'Genera los artes de Miércoles de Intimidad a partir de tus plantillas.'},
+    {icono:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="10" r="2.5"/><path d="M8 17c0-2 1.8-3.5 4-3.5s4 1.5 4 3.5"/></svg>', titulo:'Directorio', texto:'El ícono de arriba a la derecha te lleva al directorio de los 20 ministerios, en cualquier momento.'}
+  ],
+  LIDER: [
+    {icono:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>', titulo:'Mi Programación', texto:'Tus próximas coberturas y las solicitudes que te han encargado dar seguimiento.'},
+    {icono:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.2" width="6" height="3.6" rx="1"/><path d="M9 11h6M9 15h6"/></svg>', titulo:'Solicitudes', texto:'Sigue las solicitudes que le corresponden a tu rama.'},
+    {icono:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8.5 15l2 2 4.5-4.5"/></svg>', titulo:'Eventos', texto:'Crea eventos nuevos cuando haga falta agendar algo.'},
+    {icono:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9.5h18M9 9.5v10.5"/></svg>', titulo:'Programación', texto:'Asigna a tu equipo en el calendario de cobertura.'}
+  ],
+  PASTOR: [
+    {icono:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V10M11 19V5M18 19v-6"/></svg>', titulo:'Dashboard', texto:'Estadísticas del movimiento de comunicaciones — solo lectura.'},
+    {icono:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="10" r="2.5"/><path d="M8 17c0-2 1.8-3.5 4-3.5s4 1.5 4 3.5"/></svg>', titulo:'Directorio', texto:'El ícono de arriba a la derecha te lleva al directorio de los 20 ministerios, para editarlo cuando haga falta.'}
+  ],
+  MIEMBRO: [
+    {icono:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>', titulo:'Mi Programación', texto:'Tus próximas coberturas — acéptalas desde aquí en cuanto te asignen algo.'},
+    {icono:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.2" width="6" height="3.6" rx="1"/><path d="M9 11h6M9 15h6"/></svg>', titulo:'Solicitudes', texto:'Las solicitudes que te han asignado dar seguimiento.'}
+  ]
+};
+
+function mostrarBienvenida(){
+  const rol = String(currentUser.rol||'').toUpperCase();
+  const clave = ['ADMIN','LIDER','PASTOR'].includes(rol) ? rol : 'MIEMBRO';
+  const items = ONBOARDING_ITEMS[clave] || [];
+  const primerNombre = String(currentUser.nombre||'').trim().split(/\s+/)[0] || '';
+  document.getElementById('bienvenida-titulo').textContent = `¡Hola, ${primerNombre}!`;
+  document.getElementById('bienvenida-lista').innerHTML = items.map(it => `
+    <div style="display:flex;gap:12px;align-items:flex-start">
+      <div class="bienvenida-icono" style="width:34px;height:34px;border-radius:10px;background:var(--bg-panel-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--gold-light)">${it.icono}</div>
+      <div>
+        <div style="font-weight:600;color:var(--white);font-size:.9rem">${it.titulo}</div>
+        <div style="color:var(--lilac-dim);font-size:.8rem;margin-top:2px">${it.texto}</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('bienvenida-overlay').style.display = 'flex';
+}
+
+function cerrarBienvenida(){
+  document.getElementById('bienvenida-overlay').style.display = 'none';
+  localStorage.setItem('hub_onboarding_visto', '1');
+}
+
+function toggleAdminSidebar(){
+  const el = document.getElementById('admin-sidebar');
+  const colapsado = el.classList.toggle('collapsed');
+  localStorage.setItem('hub_sidebar_collapsed', colapsado ? '1' : '0');
+}
+
+function restaurarEstadoSidebar(){
+  const el = document.getElementById('admin-sidebar');
+  if(localStorage.getItem('hub_sidebar_collapsed') === '1') el.classList.add('collapsed');
+}
+
 function setTabVisibility(tabName, visible){
   document.querySelectorAll(`[data-admin-tab="${tabName}"]`).forEach(el => el.classList.toggle('tab-hidden', !visible));
 }
 
 function switchAdminTab(tab){
-  document.querySelectorAll('#panel-admin .tabs .btn, #panel-admin .mobile-nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.adminTab === tab));
+  document.querySelectorAll('#panel-admin .admin-sidebar-link, #panel-admin .mobile-nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.adminTab === tab));
   document.getElementById('admin-tab-solicitudes').classList.toggle('active', tab==='solicitudes');
   document.getElementById('admin-tab-eventos').classList.toggle('active', tab==='eventos');
   document.getElementById('admin-tab-programacion').classList.toggle('active', tab==='programacion');
