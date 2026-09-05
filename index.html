@@ -124,13 +124,14 @@
   .field input[type=number],
   .field input[type=file],
   .field select,
-  .field textarea{
+  .field textarea,
+  .dark-input{
     width:100%;background:var(--bg-panel-2);border:1px solid var(--border);
     border-radius:10px;padding:11px 14px;color:var(--white);font-size:.92rem;
     font-family:inherit;
   }
   .field textarea{resize:vertical;min-height:90px}
-  .field input:focus,.field select:focus,.field textarea:focus{
+  .field input:focus,.field select:focus,.field textarea:focus,.dark-input:focus{
     outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(234,179,8,.15);
   }
   .field-row{display:grid;grid-template-columns:1fr;gap:16px}
@@ -1394,8 +1395,8 @@
         <button type="button" class="btn btn-outline btn-sm active" id="esc-pred-tipo-interno" onclick="seleccionarPredicadorTipo('interno')">Pastor interno</button>
         <button type="button" class="btn btn-outline btn-sm" id="esc-pred-tipo-invitado" onclick="seleccionarPredicadorTipo('invitado')">Pastor invitado</button>
       </div>
-      <select id="esc-pred-interno"></select>
-      <input type="text" id="esc-pred-invitado" placeholder="Nombre del pastor invitado" style="display:none">
+      <select id="esc-pred-interno" class="dark-input"></select>
+      <input type="text" id="esc-pred-invitado" class="dark-input" placeholder="Nombre del pastor invitado" style="display:none">
     </div>
 
     <div class="dashboard-section" style="padding:14px 16px;margin-bottom:14px">🙏 Tiempo de ministración</div>
@@ -1418,7 +1419,8 @@
         <button type="button" class="btn btn-outline btn-sm" id="esc-video-si" onclick="seleccionarVideoResumen(true)">Sí</button>
         <button type="button" class="btn btn-outline btn-sm active" id="esc-video-no" onclick="seleccionarVideoResumen(false)">No</button>
       </div>
-      <select id="esc-video-ministerio" style="display:none"></select>
+      <div id="esc-video-list" style="display:none"></div>
+      <button type="button" class="btn btn-outline btn-sm" id="esc-video-agregar" style="display:none;margin-top:8px" onclick="agregarVideoMinisterio()">+ Agregar otro ministerio</button>
     </div>
 
     <div class="dashboard-section" style="padding:14px 16px;margin-bottom:14px">
@@ -2149,7 +2151,7 @@ function abrirEscaletaBuilder(){
 
   renderAnunciosEscaletaList();
 
-  poblarSelectMinisterios(document.getElementById('esc-video-ministerio'));
+  document.getElementById('esc-video-list').innerHTML = '';
   seleccionarVideoResumen(false);
 
   document.getElementById('esc-tarima-list').innerHTML = '';
@@ -2190,7 +2192,9 @@ function seleccionarVideoResumen(si){
   ESCALETA_VIDEO = si;
   document.getElementById('esc-video-si').classList.toggle('active', si);
   document.getElementById('esc-video-no').classList.toggle('active', !si);
-  document.getElementById('esc-video-ministerio').style.display = si ? 'block' : 'none';
+  document.getElementById('esc-video-list').style.display = si ? 'block' : 'none';
+  document.getElementById('esc-video-agregar').style.display = si ? 'inline-flex' : 'none';
+  if(si && !document.getElementById('esc-video-list').children.length) agregarVideoMinisterio();
 }
 
 function seleccionarAnunciosTarima(si){
@@ -2202,11 +2206,11 @@ function seleccionarAnunciosTarima(si){
   if(si && !document.getElementById('esc-tarima-list').children.length) agregarTarimaMinisterio();
 }
 
-function agregarTarimaMinisterio(){
+function agregarFilaMinisterio(containerId){
   const row = document.createElement('div');
   row.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:center';
   const sel = document.createElement('select');
-  sel.className = 'esc-tarima-select';
+  sel.className = 'dark-input esc-ministerio-select';
   sel.style.margin = '0';
   poblarSelectMinisterios(sel);
   const btnX = document.createElement('button');
@@ -2217,8 +2221,11 @@ function agregarTarimaMinisterio(){
   btnX.onclick = () => row.remove();
   row.appendChild(sel);
   row.appendChild(btnX);
-  document.getElementById('esc-tarima-list').appendChild(row);
+  document.getElementById(containerId).appendChild(row);
 }
+
+function agregarVideoMinisterio(){ agregarFilaMinisterio('esc-video-list'); }
+function agregarTarimaMinisterio(){ agregarFilaMinisterio('esc-tarima-list'); }
 
 async function guardarEscaletaDomingo(){
   const btn = document.getElementById('btn-guardar-escaleta');
@@ -2239,8 +2246,10 @@ async function guardarEscaletaDomingo(){
   const anuncioExtra = document.getElementById('esc-anuncio-extra').value.trim();
 
   const videoResumen = ESCALETA_VIDEO;
-  const videoResumenMinisterioId = videoResumen ? document.getElementById('esc-video-ministerio').value : '';
-  if(videoResumen && !videoResumenMinisterioId){ errorEl.textContent = 'Selecciona el ministerio del video resumen.'; errorEl.style.display = 'block'; return; }
+  const videoResumenMinisterioIds = videoResumen
+    ? [...document.querySelectorAll('#esc-video-list select')].map(s => s.value).filter(Boolean)
+    : [];
+  if(videoResumen && !videoResumenMinisterioIds.length){ errorEl.textContent = 'Agrega al menos un ministerio para el video resumen.'; errorEl.style.display = 'block'; return; }
 
   const anunciosTarima = ESCALETA_TARIMA;
   const anunciosTarimaIds = anunciosTarima
@@ -2254,7 +2263,7 @@ async function guardarEscaletaDomingo(){
   try{
     const r = await apiPost('guardar_escaleta_domingo', {
       token: authToken, fecha, predicadorTipo, predicadorNombre,
-      anunciosOfrenda, anuncioExtra, videoResumen, videoResumenMinisterioId,
+      anunciosOfrenda, anuncioExtra, videoResumen, videoResumenMinisterioIds,
       anunciosTarima, anunciosTarimaIds
     });
     cerrarEscaletaBuilder();
