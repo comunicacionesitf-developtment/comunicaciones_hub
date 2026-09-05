@@ -33,7 +33,7 @@
     --shadow:0 10px 30px -10px rgba(0,0,0,.5);
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  html{scroll-behavior:smooth;overflow-x:hidden;max-width:100vw}
+  html{scroll-behavior:smooth}
   body{
     background:var(--bg);
     color:var(--white);
@@ -396,8 +396,12 @@
   }
   .events-aside-toggle:hover{border-color:var(--gold);color:var(--gold-light)}
   .events-aside-toggle svg{width:14px;height:14px}
-  #admin-events-slot{width:300px;flex-shrink:0}
-  #admin-events-slot.oculto{display:none}
+  #admin-events-slot{width:300px;flex-shrink:0;transition:width .18s ease}
+  #admin-events-slot.oculto{width:52px}
+  #admin-events-slot.oculto .events-aside-title{display:none}
+  #admin-events-slot.oculto .events-list{display:none}
+  #admin-events-slot.oculto .events-aside-header{justify-content:center}
+  #admin-events-slot.oculto .events-panel{padding:16px 10px}
   #admin-events-slot .events-panel{width:100%}
   .panel-grid .events-aside-toggle{display:none}
 
@@ -817,7 +821,7 @@
 
     <aside class="panel events-panel" id="events-aside">
       <div class="events-aside-header">
-        <div>
+        <div class="events-aside-title">
           <h2>Eventos de la semana</h2>
           <div class="sub">Cobertura programada — solo lectura</div>
         </div>
@@ -3678,6 +3682,7 @@ function aplicarSesion(){
   renderAvatar(document.getElementById('avatar-circle'), currentUser.nombre, currentUser.id, currentUser.foto);
 
   document.getElementById('panel-publico').style.display = 'none';
+  document.getElementById('panel').style.display = 'none';
   document.getElementById('admin-shell').style.display = 'block';
   document.getElementById('admin-events-slot').appendChild(document.getElementById('events-aside'));
   ES_ADMIN_O_LIDER = esAdmin || esLider;
@@ -3780,6 +3785,7 @@ async function logout(){
   document.getElementById('topbar-logeado').style.display = 'none';
   document.getElementById('hero-publico').style.display = 'block';
   document.getElementById('panel-publico').style.display = 'block';
+  document.getElementById('panel').style.display = '';
   document.getElementById('admin-shell').style.display = 'none';
   document.querySelector('#panel .panel-grid').appendChild(document.getElementById('events-aside'));
 }
@@ -3947,6 +3953,7 @@ function toggleEventosAside(){
   const oculto = slot.classList.toggle('oculto');
   icono.innerHTML = oculto ? '<path d="M9 6l6 6-6 6"/>' : '<path d="M15 6l-6 6 6 6"/>';
   btn.title = oculto ? 'Mostrar eventos de la semana' : 'Ocultar eventos de la semana';
+  btn.setAttribute('aria-label', btn.title);
   localStorage.setItem('hub_eventos_aside_oculto', oculto ? '1' : '0');
 }
 
@@ -3954,8 +3961,11 @@ function restaurarEstadoEventosAside(){
   const oculto = localStorage.getItem('hub_eventos_aside_oculto') === '1';
   const slot = document.getElementById('admin-events-slot');
   const icono = document.getElementById('icono-toggle-eventos');
+  const btn = document.getElementById('btn-toggle-eventos');
   slot.classList.toggle('oculto', oculto);
   icono.innerHTML = oculto ? '<path d="M9 6l6 6-6 6"/>' : '<path d="M15 6l-6 6 6 6"/>';
+  btn.title = oculto ? 'Mostrar eventos de la semana' : 'Ocultar eventos de la semana';
+  btn.setAttribute('aria-label', btn.title);
 }
 
 function setTabVisibility(tabName, visible){
