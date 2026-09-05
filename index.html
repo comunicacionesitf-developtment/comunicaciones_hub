@@ -933,6 +933,13 @@
           <div class="admin-note" style="margin-bottom:8px;color:var(--white);font-weight:700;font-size:1rem">Estadísticas del mes</div>
           <div id="dashboard-stats-slot"></div>
         </div>
+        <div class="dashboard-section" id="dashboard-escaleta-section">
+          <div class="form-footer" style="margin-bottom:14px">
+            <div class="admin-note" style="margin-bottom:0;color:var(--white);font-weight:700;font-size:1rem">Escaleta de Domingo</div>
+            <button class="btn btn-primary btn-sm" onclick="abrirEscaletaBuilder()">+ Nueva escaleta</button>
+          </div>
+          <div class="admin-list" id="escaletas-dashboard-list"></div>
+        </div>
         <div class="dashboard-section" id="dashboard-usuarios-section" style="display:none">
           <div class="admin-note" style="margin-bottom:8px;color:var(--white);font-weight:700;font-size:1rem">Equipo</div>
           <div id="dashboard-usuarios-slot"></div>
@@ -1366,6 +1373,66 @@
     <div class="hint" id="categoria-error" style="color:var(--red);display:none;margin-bottom:12px"></div>
     <button class="btn btn-primary" style="width:100%" id="btn-guardar-categoria" onclick="guardarCategoriaAdmin()">Guardar categoría</button>
     <button class="btn btn-outline" id="btn-desactivar-categoria" style="width:100%;margin-top:10px;display:none" onclick="cambiarEstadoCategoriaAdmin()">Desactivar</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="escaleta-overlay" style="display:none">
+  <div class="modal-box" style="max-width:640px">
+    <button class="modal-close" onclick="cerrarEscaletaBuilder()" aria-label="Cerrar">&times;</button>
+    <h3>Escaleta de Domingo</h3>
+
+    <div class="field">
+      <label>Fecha del domingo</label>
+      <input type="date" id="esc-fecha">
+    </div>
+
+    <div class="dashboard-section" style="padding:14px 16px;margin-bottom:14px">🎶 Tiempo de alabanza</div>
+
+    <div class="dashboard-section" style="padding:14px 16px;margin-bottom:14px">
+      <div class="admin-note" style="margin-bottom:10px;color:var(--white);font-weight:600">🎤 Predicación</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <button type="button" class="btn btn-outline btn-sm active" id="esc-pred-tipo-interno" onclick="seleccionarPredicadorTipo('interno')">Pastor interno</button>
+        <button type="button" class="btn btn-outline btn-sm" id="esc-pred-tipo-invitado" onclick="seleccionarPredicadorTipo('invitado')">Pastor invitado</button>
+      </div>
+      <select id="esc-pred-interno"></select>
+      <input type="text" id="esc-pred-invitado" placeholder="Nombre del pastor invitado" style="display:none">
+    </div>
+
+    <div class="dashboard-section" style="padding:14px 16px;margin-bottom:14px">🙏 Tiempo de ministración</div>
+
+    <div class="dashboard-section" style="padding:14px 16px;margin-bottom:14px">
+      <div class="form-footer" style="margin-bottom:10px">
+        <div class="admin-note" style="margin-bottom:0;color:var(--white);font-weight:600">💰 Tiempo de la ofrenda — loop de anuncios</div>
+        <button type="button" class="btn btn-outline btn-sm" onclick="marcarTodosAnunciosEscaleta()">☑ Marcar todos</button>
+      </div>
+      <div id="esc-anuncios-list"></div>
+      <div class="field" style="margin-top:10px;margin-bottom:0">
+        <label>Anuncio extra <span class="hint">(opcional, no es lo normal)</span></label>
+        <input type="text" id="esc-anuncio-extra" placeholder="Ej. actividad especial de este domingo">
+      </div>
+    </div>
+
+    <div class="dashboard-section" style="padding:14px 16px;margin-bottom:14px">
+      <div class="admin-note" style="margin-bottom:10px;color:var(--white);font-weight:600">🎬 Video resumen de la semana</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <button type="button" class="btn btn-outline btn-sm" id="esc-video-si" onclick="seleccionarVideoResumen(true)">Sí</button>
+        <button type="button" class="btn btn-outline btn-sm active" id="esc-video-no" onclick="seleccionarVideoResumen(false)">No</button>
+      </div>
+      <select id="esc-video-ministerio" style="display:none"></select>
+    </div>
+
+    <div class="dashboard-section" style="padding:14px 16px;margin-bottom:14px">
+      <div class="admin-note" style="margin-bottom:10px;color:var(--white);font-weight:600">🖼️ Anuncios en tarima (con arte)</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <button type="button" class="btn btn-outline btn-sm" id="esc-tarima-si" onclick="seleccionarAnunciosTarima(true)">Sí</button>
+        <button type="button" class="btn btn-outline btn-sm active" id="esc-tarima-no" onclick="seleccionarAnunciosTarima(false)">No</button>
+      </div>
+      <div id="esc-tarima-list" style="display:none"></div>
+      <button type="button" class="btn btn-outline btn-sm" id="esc-tarima-agregar" style="display:none;margin-top:8px" onclick="agregarTarimaMinisterio()">+ Agregar otro ministerio</button>
+    </div>
+
+    <div class="hint" id="escaleta-error" style="color:var(--red);display:none;margin-bottom:12px"></div>
+    <button class="btn btn-primary" style="width:100%" id="btn-guardar-escaleta" onclick="guardarEscaletaDomingo()">Generar y enviar escaleta</button>
   </div>
 </div>
 
@@ -2003,6 +2070,202 @@ function cargarDashboardTab(){
     <div id="dashboard-content"><div class="empty-state">Cargando...</div></div>
   `;
   loadDashboardStats();
+  cargarEscaletasDashboard();
+}
+
+async function cargarEscaletasDashboard(){
+  const cont = document.getElementById('escaletas-dashboard-list');
+  cont.innerHTML = `<div class="empty-state">Cargando...</div>`;
+  try{
+    const lista = await apiGet('escaletas_domingo', {token: authToken});
+    renderEscaletasDashboard(lista);
+  } catch(err){
+    cont.innerHTML = `<div class="empty-state">No se pudo cargar: ${err.message}</div>`;
+  }
+}
+
+function renderEscaletasDashboard(lista){
+  const cont = document.getElementById('escaletas-dashboard-list');
+  if(!lista.length){
+    cont.innerHTML = `<div class="empty-state">Todavía no hay escaletas creadas.</div>`;
+    return;
+  }
+  cont.innerHTML = lista.map(e => {
+    const fecha = parseFechaLocal(e.fecha);
+    const fechaLabel = fecha ? fecha.toLocaleDateString('es-SV', {weekday:'long', day:'numeric', month:'long', year:'numeric'}) : e.fecha;
+    return `
+      <div class="admin-row">
+        <div class="ar-main">
+          <div class="ar-title">${fechaLabel}</div>
+          <div class="ar-sub">Predica: ${e.predicadorNombre || '—'}${e.predicadorTipo === 'invitado' ? ' (invitado)' : ''}</div>
+        </div>
+        <div class="ar-side">
+          ${e.pdfUrl ? `<a class="btn btn-outline btn-sm" href="${e.pdfUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()">📄 Descargar PDF</a>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function parseFechaLocal(fechaStr){
+  const m = String(fechaStr||'').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(!m) return null;
+  return new Date(parseInt(m[1],10), parseInt(m[2],10)-1, parseInt(m[3],10));
+}
+
+function formatFechaISOInput(d){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+/* ---------- Escaleta de Domingo ---------- */
+
+const ANUNCIOS_LOOP_BASE = [
+  'Servicios dominicales', 'Kids & Youth (Escuela Dominical — 2 divisiones)',
+  'Actividad de lunes (si aplica esta semana)', 'Miércoles de Intimidad',
+  'Inconmovibles', 'JTF', 'Tiempo Perfecto', 'Benevolencia',
+  'Vidas Transformadas (evento del mes)', 'Clínica'
+];
+const PREDICADORES_INTERNOS = ['Luis Rodríguez', 'Francisco Martínez', 'Nelson Morales'];
+
+let ESCALETA_PREDICADOR_TIPO = 'interno';
+let ESCALETA_VIDEO = false;
+let ESCALETA_TARIMA = false;
+
+function abrirEscaletaBuilder(){
+  document.getElementById('escaleta-error').style.display = 'none';
+  document.getElementById('esc-anuncio-extra').value = '';
+  const btnGuardar = document.getElementById('btn-guardar-escaleta');
+  btnGuardar.disabled = false;
+  btnGuardar.textContent = 'Generar y enviar escaleta';
+
+  const hoy = new Date();
+  const diasHastaDomingo = (7 - hoy.getDay()) % 7 || 7;
+  const proxDomingo = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + diasHastaDomingo);
+  document.getElementById('esc-fecha').value = formatFechaISOInput(proxDomingo);
+
+  const selInterno = document.getElementById('esc-pred-interno');
+  selInterno.innerHTML = PREDICADORES_INTERNOS.map(n => `<option value="${n}">${n}</option>`).join('');
+  document.getElementById('esc-pred-invitado').value = '';
+  seleccionarPredicadorTipo('interno');
+
+  renderAnunciosEscaletaList();
+
+  poblarSelectMinisterios(document.getElementById('esc-video-ministerio'));
+  seleccionarVideoResumen(false);
+
+  document.getElementById('esc-tarima-list').innerHTML = '';
+  seleccionarAnunciosTarima(false);
+
+  document.getElementById('escaleta-overlay').style.display = 'flex';
+}
+
+function cerrarEscaletaBuilder(){
+  document.getElementById('escaleta-overlay').style.display = 'none';
+}
+
+function poblarSelectMinisterios(sel){
+  sel.innerHTML = '<option value="">Selecciona un ministerio</option>' +
+    MINISTERIOS.map(m => `<option value="${m.ministerioId}">${m.ministerio}</option>`).join('');
+}
+
+function seleccionarPredicadorTipo(tipo){
+  ESCALETA_PREDICADOR_TIPO = tipo;
+  document.getElementById('esc-pred-tipo-interno').classList.toggle('active', tipo === 'interno');
+  document.getElementById('esc-pred-tipo-invitado').classList.toggle('active', tipo === 'invitado');
+  document.getElementById('esc-pred-interno').style.display = tipo === 'interno' ? 'block' : 'none';
+  document.getElementById('esc-pred-invitado').style.display = tipo === 'invitado' ? 'block' : 'none';
+}
+
+function renderAnunciosEscaletaList(){
+  document.getElementById('esc-anuncios-list').innerHTML = ANUNCIOS_LOOP_BASE.map(label => `
+    <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--lilac);margin-bottom:6px">
+      <input type="checkbox" class="esc-anuncio-check" value="${label}" style="width:auto"> ${label}
+    </label>`).join('');
+}
+
+function marcarTodosAnunciosEscaleta(){
+  document.querySelectorAll('.esc-anuncio-check').forEach(cb => cb.checked = true);
+}
+
+function seleccionarVideoResumen(si){
+  ESCALETA_VIDEO = si;
+  document.getElementById('esc-video-si').classList.toggle('active', si);
+  document.getElementById('esc-video-no').classList.toggle('active', !si);
+  document.getElementById('esc-video-ministerio').style.display = si ? 'block' : 'none';
+}
+
+function seleccionarAnunciosTarima(si){
+  ESCALETA_TARIMA = si;
+  document.getElementById('esc-tarima-si').classList.toggle('active', si);
+  document.getElementById('esc-tarima-no').classList.toggle('active', !si);
+  document.getElementById('esc-tarima-list').style.display = si ? 'block' : 'none';
+  document.getElementById('esc-tarima-agregar').style.display = si ? 'inline-flex' : 'none';
+  if(si && !document.getElementById('esc-tarima-list').children.length) agregarTarimaMinisterio();
+}
+
+function agregarTarimaMinisterio(){
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:center';
+  const sel = document.createElement('select');
+  sel.className = 'esc-tarima-select';
+  sel.style.margin = '0';
+  poblarSelectMinisterios(sel);
+  const btnX = document.createElement('button');
+  btnX.type = 'button';
+  btnX.className = 'icon-btn-sm';
+  btnX.setAttribute('aria-label', 'Quitar ministerio');
+  btnX.textContent = '×';
+  btnX.onclick = () => row.remove();
+  row.appendChild(sel);
+  row.appendChild(btnX);
+  document.getElementById('esc-tarima-list').appendChild(row);
+}
+
+async function guardarEscaletaDomingo(){
+  const btn = document.getElementById('btn-guardar-escaleta');
+  if(btn.disabled) return;
+  const errorEl = document.getElementById('escaleta-error');
+  errorEl.style.display = 'none';
+
+  const fecha = document.getElementById('esc-fecha').value;
+  if(!fecha){ errorEl.textContent = 'Selecciona la fecha del domingo.'; errorEl.style.display = 'block'; return; }
+
+  const predicadorTipo = ESCALETA_PREDICADOR_TIPO;
+  const predicadorNombre = predicadorTipo === 'interno'
+    ? document.getElementById('esc-pred-interno').value
+    : document.getElementById('esc-pred-invitado').value.trim();
+  if(!predicadorNombre){ errorEl.textContent = 'Falta el nombre de quién predica.'; errorEl.style.display = 'block'; return; }
+
+  const anunciosOfrenda = [...document.querySelectorAll('.esc-anuncio-check:checked')].map(cb => cb.value);
+  const anuncioExtra = document.getElementById('esc-anuncio-extra').value.trim();
+
+  const videoResumen = ESCALETA_VIDEO;
+  const videoResumenMinisterioId = videoResumen ? document.getElementById('esc-video-ministerio').value : '';
+  if(videoResumen && !videoResumenMinisterioId){ errorEl.textContent = 'Selecciona el ministerio del video resumen.'; errorEl.style.display = 'block'; return; }
+
+  const anunciosTarima = ESCALETA_TARIMA;
+  const anunciosTarimaIds = anunciosTarima
+    ? [...document.querySelectorAll('#esc-tarima-list select')].map(s => s.value).filter(Boolean)
+    : [];
+  if(anunciosTarima && !anunciosTarimaIds.length){ errorEl.textContent = 'Agrega al menos un ministerio para anuncios en tarima.'; errorEl.style.display = 'block'; return; }
+
+  const textoOriginal = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Generando...';
+  try{
+    const r = await apiPost('guardar_escaleta_domingo', {
+      token: authToken, fecha, predicadorTipo, predicadorNombre,
+      anunciosOfrenda, anuncioExtra, videoResumen, videoResumenMinisterioId,
+      anunciosTarima, anunciosTarimaIds
+    });
+    cerrarEscaletaBuilder();
+    cargarEscaletasDashboard();
+    alert('Escaleta generada y enviada por correo. PDF listo para descargar: ' + r.pdfUrl);
+  } catch(err){
+    errorEl.textContent = err.message;
+    errorEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+  }
 }
 
 function cambiarMesDashboard(delta){
