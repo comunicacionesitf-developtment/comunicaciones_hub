@@ -348,20 +348,31 @@
   }
   .icon-btn-sm:hover{border-color:var(--gold);color:var(--gold-light)}
 
-  /* ---------- Sidebar del panel admin (desktop) ---------- */
-  .admin-layout{display:flex;align-items:flex-start;gap:22px}
+  /* ---------- Shell admin estilo WordPress: sidebar fijo pegado al borde izquierdo ---------- */
+  .topbar-logeado{position:sticky;top:0;z-index:30}
+  .admin-shell{display:block}
+  .admin-sidebar-wp{
+    position:fixed;left:0;top:70px;bottom:0;z-index:20;
+    background:var(--bg-panel);border-right:1px solid var(--border);
+    padding:16px 10px;overflow-y:auto;
+  }
+  .admin-canvas{margin-left:212px;padding:28px clamp(16px,3vw,32px);transition:margin-left .18s ease}
+  #admin-shell.sidebar-colapsado .admin-canvas{margin-left:52px}
+  .admin-canvas-grid{display:flex;align-items:flex-start;gap:24px;max-width:1320px}
+
   .admin-sidebar{
     width:212px;flex-shrink:0;display:flex;flex-direction:column;gap:3px;
     transition:width .18s ease;
   }
-  .admin-sidebar.collapsed{width:56px}
+  .admin-sidebar.collapsed{width:52px}
   .admin-sidebar-toggle{
     display:flex;align-items:center;justify-content:center;
-    background:var(--bg-panel-2);border:1px solid var(--border);border-radius:10px;
-    color:var(--lilac-dim);cursor:pointer;padding:10px;margin-bottom:10px;width:100%;
+    background:none;border:1px solid var(--border);border-radius:10px;
+    color:var(--lilac-dim);cursor:pointer;padding:10px;margin-bottom:14px;width:100%;
   }
   .admin-sidebar-toggle:hover{border-color:var(--gold);color:var(--gold-light)}
-  .admin-sidebar-toggle svg{width:17px;height:17px;flex-shrink:0}
+  .admin-sidebar-toggle svg{width:16px;height:16px;flex-shrink:0}
+  .admin-sidebar.collapsed .admin-sidebar-toggle svg{transform:rotate(180deg)}
   .admin-sidebar-link{
     display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;
     background:none;border:none;color:var(--lilac-dim);cursor:pointer;text-align:left;width:100%;
@@ -375,6 +386,21 @@
   .admin-sidebar.collapsed .admin-sidebar-label{display:none}
   .admin-sidebar.collapsed .admin-sidebar-link{justify-content:center;padding:10px}
   .admin-content{flex:1;min-width:0}
+
+  /* ---------- Eventos de la semana: colapsable en desktop ---------- */
+  .events-aside-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  .events-aside-toggle{
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    width:30px;height:30px;border-radius:50%;background:none;border:1px solid var(--border);
+    color:var(--lilac-dim);cursor:pointer;
+  }
+  .events-aside-toggle:hover{border-color:var(--gold);color:var(--gold-light)}
+  .events-aside-toggle svg{width:14px;height:14px}
+  #admin-events-slot{width:300px;flex-shrink:0}
+  #admin-events-slot.oculto{display:none}
+  #admin-events-slot .events-panel{width:100%}
+  .panel-grid .events-aside-toggle{display:none}
+
   .bienvenida-icono svg{width:18px;height:18px}
 
   /* ---------- Dashboard ---------- */
@@ -488,8 +514,11 @@
     .event-card{min-width:260px;scroll-snap-align:start;flex-direction:column;padding:16px 14px 13px}
     .e-accent-bar{top:0;left:0;right:0;bottom:auto;width:auto;height:4px}
 
-    .admin-sidebar{display:none}
-    .admin-layout{display:block}
+    .admin-sidebar-wp{display:none}
+    .admin-canvas{margin-left:0;padding:16px 16px 88px}
+    .admin-canvas-grid{display:block}
+    #admin-events-slot{width:auto;margin-bottom:0}
+    .topbar-logeado{position:static}
     #panel-admin{padding-bottom:14px}
     main{padding-bottom:88px}
 
@@ -786,11 +815,26 @@
       </div>
     </div>
 
-    <div class="panel request-panel" id="panel-admin" style="display:none">
-      <div class="admin-layout">
-        <nav class="admin-sidebar" id="admin-sidebar">
+    <aside class="panel events-panel" id="events-aside">
+      <div class="events-aside-header">
+        <div>
+          <h2>Eventos de la semana</h2>
+          <div class="sub">Cobertura programada — solo lectura</div>
+        </div>
+        <button class="events-aside-toggle" onclick="toggleEventosAside()" id="btn-toggle-eventos" title="Ocultar eventos de la semana" aria-label="Ocultar eventos de la semana">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="icono-toggle-eventos"><path d="M15 6l-6 6 6 6"/></svg>
+        </button>
+      </div>
+      <div class="events-list" id="events-list"></div>
+    </aside>
+
+  </section>
+</main>
+
+<div class="admin-shell" id="admin-shell" style="display:none">
+      <nav class="admin-sidebar admin-sidebar-wp" id="admin-sidebar">
           <button class="admin-sidebar-toggle" onclick="toggleAdminSidebar()" aria-label="Colapsar o expandir menú" title="Colapsar o expandir menú">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="icono-toggle-sidebar"><path d="M15 6l-6 6 6 6"/></svg>
           </button>
           <button class="admin-sidebar-link" data-admin-tab="mistareas" onclick="switchAdminTab('mistareas')">
             <span class="admin-sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span>
@@ -816,9 +860,11 @@
             <span class="admin-sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M21 15l-5-5-9 9"/></svg></span>
             <span class="admin-sidebar-label">Generador de Artes</span>
           </button>
-        </nav>
+      </nav>
 
-        <div class="admin-content">
+      <div class="admin-canvas">
+        <div class="admin-canvas-grid">
+          <div class="admin-content" id="panel-admin">
 
       <div class="tab-content" id="admin-tab-mistareas">
         <div class="admin-note" style="margin-bottom:14px">Tus próximas coberturas asignadas y las solicitudes que te han encargado dar seguimiento.</div>
@@ -891,6 +937,8 @@
 
       <div class="tab-content" id="admin-tab-artes"></div>
 
+          </div>
+          <div id="admin-events-slot"></div>
         </div>
       </div>
 
@@ -921,15 +969,6 @@
         </button>
       </nav>
     </div>
-
-    <aside class="panel events-panel">
-      <h2>Eventos de la semana</h2>
-      <div class="sub">Cobertura programada — solo lectura</div>
-      <div class="events-list" id="events-list"></div>
-    </aside>
-
-  </section>
-</main>
 
 <div class="modal-overlay" id="evento-overlay" style="display:none">
   <div class="modal-box">
@@ -3639,9 +3678,11 @@ function aplicarSesion(){
   renderAvatar(document.getElementById('avatar-circle'), currentUser.nombre, currentUser.id, currentUser.foto);
 
   document.getElementById('panel-publico').style.display = 'none';
-  document.getElementById('panel-admin').style.display = 'block';
+  document.getElementById('admin-shell').style.display = 'block';
+  document.getElementById('admin-events-slot').appendChild(document.getElementById('events-aside'));
   ES_ADMIN_O_LIDER = esAdmin || esLider;
   restaurarEstadoSidebar();
+  restaurarEstadoEventosAside();
 
   // Máximo 5 pestañas por perfil: Directorio vive en el header (ícono), y para
   // Admin, Mi Programación + Usuarios se incrustan dentro de Dashboard en vez
@@ -3739,7 +3780,8 @@ async function logout(){
   document.getElementById('topbar-logeado').style.display = 'none';
   document.getElementById('hero-publico').style.display = 'block';
   document.getElementById('panel-publico').style.display = 'block';
-  document.getElementById('panel-admin').style.display = 'none';
+  document.getElementById('admin-shell').style.display = 'none';
+  document.querySelector('#panel .panel-grid').appendChild(document.getElementById('events-aside'));
 }
 
 let PERFIL_FOTO_PENDIENTE = null;
@@ -3888,12 +3930,32 @@ function cerrarBienvenida(){
 function toggleAdminSidebar(){
   const el = document.getElementById('admin-sidebar');
   const colapsado = el.classList.toggle('collapsed');
+  document.getElementById('admin-shell').classList.toggle('sidebar-colapsado', colapsado);
   localStorage.setItem('hub_sidebar_collapsed', colapsado ? '1' : '0');
 }
 
 function restaurarEstadoSidebar(){
-  const el = document.getElementById('admin-sidebar');
-  if(localStorage.getItem('hub_sidebar_collapsed') === '1') el.classList.add('collapsed');
+  const colapsado = localStorage.getItem('hub_sidebar_collapsed') === '1';
+  document.getElementById('admin-sidebar').classList.toggle('collapsed', colapsado);
+  document.getElementById('admin-shell').classList.toggle('sidebar-colapsado', colapsado);
+}
+
+function toggleEventosAside(){
+  const slot = document.getElementById('admin-events-slot');
+  const btn = document.getElementById('btn-toggle-eventos');
+  const icono = document.getElementById('icono-toggle-eventos');
+  const oculto = slot.classList.toggle('oculto');
+  icono.innerHTML = oculto ? '<path d="M9 6l6 6-6 6"/>' : '<path d="M15 6l-6 6 6 6"/>';
+  btn.title = oculto ? 'Mostrar eventos de la semana' : 'Ocultar eventos de la semana';
+  localStorage.setItem('hub_eventos_aside_oculto', oculto ? '1' : '0');
+}
+
+function restaurarEstadoEventosAside(){
+  const oculto = localStorage.getItem('hub_eventos_aside_oculto') === '1';
+  const slot = document.getElementById('admin-events-slot');
+  const icono = document.getElementById('icono-toggle-eventos');
+  slot.classList.toggle('oculto', oculto);
+  icono.innerHTML = oculto ? '<path d="M9 6l6 6-6 6"/>' : '<path d="M15 6l-6 6 6 6"/>';
 }
 
 function setTabVisibility(tabName, visible){
@@ -3901,7 +3963,7 @@ function setTabVisibility(tabName, visible){
 }
 
 function switchAdminTab(tab){
-  document.querySelectorAll('#panel-admin .admin-sidebar-link, #panel-admin .mobile-nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.adminTab === tab));
+  document.querySelectorAll('#admin-shell .admin-sidebar-link, #admin-shell .mobile-nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.adminTab === tab));
   document.getElementById('admin-tab-solicitudes').classList.toggle('active', tab==='solicitudes');
   document.getElementById('admin-tab-eventos').classList.toggle('active', tab==='eventos');
   document.getElementById('admin-tab-programacion').classList.toggle('active', tab==='programacion');
